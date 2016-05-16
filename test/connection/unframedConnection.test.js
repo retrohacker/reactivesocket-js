@@ -29,6 +29,124 @@ var EXPECTED_APPLICATION_ERROR = {
     data: 'Through wars of worlds - invaded by Mars'
 };
 
+describe('unframed-connection-setup', function () {
+
+    var LOG = bunyan.createLogger({
+        name: 'framed connection setup tests',
+        level: process.env.LOG_LEVEL || bunyan.INFO,
+        serializers: bunyan.stdSerializers
+    });
+
+    var WS_SERVER;
+    var WS_CLIENT_CONS = [];
+
+    before(function (done) {
+        WS_SERVER = new Ws.Server({port: PORT});
+        WS_SERVER.on('listening', done);
+    });
+
+    after(function (done) {
+        WS_CLIENT_CONS.forEach(function (conn) {
+            conn.close();
+        });
+
+        WS_SERVER.close(done);
+    });
+
+    it('extra setup frame', function (done) {
+
+        WS_SERVER.once('connection', function (socket) {
+
+            var wsStream = new WSStream({
+                log: LOG,
+                ws: socket
+            });
+
+            var rs = reactiveSocket.createConnection({
+                log: LOG,
+                transport: {
+                    stream: wsStream
+                },
+                type: 'server'
+            });
+
+            rs.once('setup-error', function (err) {
+                done();
+            });
+
+        });
+
+        var client = new Ws('ws://localhost:' + PORT);
+        client.on('open', function () {
+
+            WS_CLIENT_CONS.push(client);
+
+            var rc = reactiveSocket.createConnection({
+                log: LOG,
+                transport: {
+                    stream: new WSStream({log:LOG, ws:client}),
+                    framed: true
+                },
+                type: 'client',
+                metadataEncoding: 'utf-8',
+                dataEncoding: 'utf-8'
+            });
+
+            rc.setup({
+                metadata: 'You reached for the secret too soon',
+                data: 'you cried for the moon.'
+            }, function () {});
+        });
+    });
+
+    it('setup data and metadata', function (done) {
+
+        var metadata = 'And if your head explodes with dark forboadings too';
+        var data = 'I\'ll see you on the dark side of the moon';
+
+        WS_SERVER.once('connection', function (socket) {
+
+            var wsStream = new WSStream({
+                log: LOG,
+                ws: socket
+            });
+
+            var rs = reactiveSocket.createConnection({
+                log: LOG,
+                transport: {
+                    stream: wsStream
+                },
+                type: 'server'
+            });
+
+            rs.on('setup', function (stream) {
+                assert.equal(stream.setup.metadata, metadata);
+                assert.equal(stream.setup.data, data);
+
+                done();
+            });
+        });
+
+        var client = new Ws('ws://localhost:' + PORT);
+        client.on('open', function () {
+
+            WS_CLIENT_CONS.push(client);
+
+            reactiveSocket.createConnection({
+                log: LOG,
+                transport: {
+                    stream: new WSStream({log:LOG, ws:client})
+                },
+                type: 'client',
+                metadataEncoding: 'utf-8',
+                dataEncoding: 'utf-8',
+                setupMetadata: metadata,
+                setupData: data
+            });
+        });
+    });
+});
+
 describe('connection', function () {
     var LOG = bunyan.createLogger({
         name: 'connection tests',
@@ -102,17 +220,6 @@ describe('connection', function () {
         });
         WS_CLIENT.close();
         WS_SERVER.close();
-    });
-
-    it('extra setup frame', function (done) {
-        SERVER_CON.once('setup-error', function (err) {
-            done();
-        });
-
-        CLIENT_CON.setup({
-            metadata: 'You reached for the secret too soon',
-            data: 'you cried for the moon.'
-        }, function () {});
     });
 
     it('req/res', function (done) {

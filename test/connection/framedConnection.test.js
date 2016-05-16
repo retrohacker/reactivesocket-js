@@ -36,6 +36,133 @@ var EXPECTED_APPLICATION_ERROR = {
     data: JULIUS_CAESAR
 };
 
+describe('frame-connection-setup', function () {
+
+    var LOG = bunyan.createLogger({
+        name: 'framed connection setup tests',
+        level: process.env.LOG_LEVEL || bunyan.INFO,
+        serializers: bunyan.stdSerializers
+    });
+
+    LOG.addSerializers({
+        buffer: function (buf) {
+            return buf.toString();
+        }
+    });
+
+    var TCP_SERVER;
+    var TCP_CLIENT_STREAMS = [];
+
+    before(function (done) {
+        TCP_SERVER = net.createServer();
+        TCP_SERVER.listen({
+            port: PORT,
+            host: HOST
+        }, function (err) {
+            if (err) {
+                throw err;
+            }
+            done();
+        });
+    });
+
+    after(function (done) {
+        TCP_SERVER.close(done);
+
+        TCP_CLIENT_STREAMS.forEach(function (stream) {
+            stream.end();
+        });
+    });
+
+    it('extra setup frame', function (done) {
+
+        TCP_SERVER.once('connection', function (server) {
+
+            var rs = reactiveSocket.createConnection({
+                log: LOG,
+                transport: {
+                    stream: server,
+                    framed:true
+                },
+                type: 'server'
+            });
+
+            rs.once('setup-error', function (err) {
+                done();
+            });
+
+        });
+
+        var client = net.connect(PORT, HOST, function (e) {
+
+            TCP_CLIENT_STREAMS.push(client);
+
+            var rc = reactiveSocket.createConnection({
+                log: LOG,
+                transport: {
+                    stream: client,
+                    framed: true
+                },
+                type: 'client',
+                metadataEncoding: 'utf-8',
+                dataEncoding: 'utf-8'
+            });
+
+            rc.setup({
+                metadata: 'You reached for the secret too soon',
+                data: 'you cried for the moon.'
+            }, function () {});
+        });
+    });
+
+    it('setup data and metadata', function (done) {
+
+        var metadata = 'And if your head explodes with dark forboadings too';
+        var data = 'I\'ll see you on the dark side of the moon';
+
+        TCP_SERVER.once('connection', function (server) {
+
+            var rs = reactiveSocket.createConnection({
+                log: LOG,
+                transport: {
+                    stream: server,
+                    framed:true
+                },
+                type: 'server'
+            });
+
+            rs.on('setup', function (stream) {
+                assert.equal(stream.setup.metadata, metadata);
+                assert.equal(stream.setup.data, data);
+
+                done();
+            });
+        });
+
+        var client = net.connect(PORT, HOST, function (e) {
+
+            TCP_CLIENT_STREAMS.push(client);
+
+            if (e) {
+                throw e;
+            }
+
+            reactiveSocket.createConnection({
+                log: LOG,
+                transport: {
+                    stream: client,
+                    framed: true
+                },
+                type: 'client',
+                metadataEncoding: 'utf-8',
+                dataEncoding: 'utf-8',
+                setupMetadata: metadata,
+                setupData: data
+            });
+        });
+    });
+});
+
 describe('framed-connection', function () {
     var LOG = bunyan.createLogger({
         name: 'framed connection tests',
@@ -90,7 +217,8 @@ describe('framed-connection', function () {
                     metadataEncoding: 'utf-8',
                     dataEncoding: 'utf-8'
                 });
-                return done();
+
+                CLIENT_CON.on('ready', done);
             });
         });
     });
@@ -115,17 +243,6 @@ describe('framed-connection', function () {
         });
         TCP_SERVER_STREAM.end();
         TCP_CLIENT_STREAM.end();
-    });
-
-    it('extra setup frame', function (done) {
-        SERVER_CON.once('setup-error', function (err) {
-            done();
-        });
-
-        CLIENT_CON.setup({
-            metadata: 'You reached for the secret too soon',
-            data: 'you cried for the moon.'
-        }, function () {});
     });
 
     it('req/res', function (done) {
