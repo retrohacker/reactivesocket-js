@@ -248,50 +248,65 @@ describe('framed-connection', function () {
     it('req/res', function (done) {
         SERVER_CON.once('request', function (stream) {
             assert.deepEqual(stream.getRequest(), EXPECTED_REQ);
-            // should only have the setup stream cached in the connection
-            assert.equal(Object.keys(SERVER_CON._streams).length, 2);
-            assert.isOk(SERVER_CON._streams[0]);
             stream.response(_.cloneDeep(EXPECTED_RES));
+            setImmediate(function () {
+                // should only have the setup stream cached in the connection
+                assert.equal(Object.keys(SERVER_CON._streams.streams).length,
+                             1);
+                assert.isOk(SERVER_CON._streams.streams[0]);
+            });
         });
 
         var response = CLIENT_CON.request(_.cloneDeep(EXPECTED_REQ));
 
         response.once('response', function (res) {
             assert.deepEqual(res.getResponse(), EXPECTED_RES);
-            // should only have the setup stream cached in the connection
-            assert.equal(Object.keys(CLIENT_CON._streams).length, 2);
-            assert.isOk(CLIENT_CON._streams[0]);
-            done();
+            setImmediate(function () {
+                // should only have the setup stream cached in the connection
+                assert.equal(Object.keys(CLIENT_CON._streams.streams).length,
+                             1);
+                assert.isOk(CLIENT_CON._streams.streams[0]);
+                done();
+            });
         });
     });
 
     it('req/res once more', function (done) {
         SERVER_CON.once('request', function (stream) {
             assert.deepEqual(stream.getRequest(), EXPECTED_REQ);
-            // should only have the setup stream cached in the connection
-            assert.equal(Object.keys(SERVER_CON._streams).length, 2);
-            assert.isOk(SERVER_CON._streams[0]);
             stream.response(_.cloneDeep(EXPECTED_RES));
+            setImmediate(function () {
+                // should only have the setup stream cached in the connection
+                assert.equal(Object.keys(SERVER_CON._streams.streams).length,
+                             1);
+                assert.isOk(SERVER_CON._streams.streams[0]);
+            });
         });
 
         var response = CLIENT_CON.request(_.cloneDeep(EXPECTED_REQ));
 
         response.once('response', function (res) {
             assert.deepEqual(res.getResponse(), EXPECTED_RES);
-            // should only have the setup stream cached in the connection
-            assert.equal(Object.keys(CLIENT_CON._streams).length, 2);
-            assert.isOk(CLIENT_CON._streams[0]);
-            done();
+            setImmediate(function () {
+                // should only have the setup stream cached in the connection
+                assert.equal(Object.keys(CLIENT_CON._streams.streams).length,
+                             1);
+                assert.isOk(CLIENT_CON._streams.streams[0]);
+                done();
+            });
         });
     });
 
     it('req/err', function (done) {
         SERVER_CON.once('request', function (stream) {
             assert.deepEqual(stream.getRequest(), EXPECTED_REQ);
-            // should only have the setup stream cached in the connection
-            assert.equal(Object.keys(SERVER_CON._streams).length, 2);
-            assert.isOk(SERVER_CON._streams[0]);
             stream.error(_.cloneDeep(EXPECTED_APPLICATION_ERROR));
+            setImmediate(function () {
+                // should only have the setup stream cached in the connection
+                assert.equal(Object.keys(SERVER_CON._streams.streams).length,
+                             1);
+                assert.isOk(SERVER_CON._streams.streams[0]);
+            });
         });
 
         var response = CLIENT_CON.request(_.cloneDeep(EXPECTED_REQ));
@@ -300,10 +315,13 @@ describe('framed-connection', function () {
             assert.deepEqual(_.omit(err, 'header', 'metadataEncoding',
                                     'dataEncoding'),
                                     EXPECTED_APPLICATION_ERROR);
-            // should only have the setup stream cached in the connection
-            assert.equal(Object.keys(CLIENT_CON._streams).length, 2);
-            assert.isOk(CLIENT_CON._streams[0]);
-            done();
+            setImmediate(function () {
+                // should only have the setup stream cached in the connection
+                assert.equal(Object.keys(CLIENT_CON._streams.streams).length,
+                             1);
+                assert.isOk(CLIENT_CON._streams.streams[0]);
+                done();
+            });
         });
     });
 });
