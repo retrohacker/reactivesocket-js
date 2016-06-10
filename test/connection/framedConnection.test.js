@@ -248,6 +248,9 @@ describe('framed-connection', function () {
     it('req/res', function (done) {
         SERVER_CON.once('request', function (stream) {
             assert.deepEqual(stream.getRequest(), EXPECTED_REQ);
+            // should only have the setup stream cached in the connection
+            assert.equal(Object.keys(SERVER_CON._streams).length, 2);
+            assert.isOk(SERVER_CON._streams[0]);
             stream.response(_.cloneDeep(EXPECTED_RES));
         });
 
@@ -255,6 +258,9 @@ describe('framed-connection', function () {
 
         response.once('response', function (res) {
             assert.deepEqual(res.getResponse(), EXPECTED_RES);
+            // should only have the setup stream cached in the connection
+            assert.equal(Object.keys(CLIENT_CON._streams).length, 2);
+            assert.isOk(CLIENT_CON._streams[0]);
             done();
         });
     });
@@ -262,6 +268,9 @@ describe('framed-connection', function () {
     it('req/res once more', function (done) {
         SERVER_CON.once('request', function (stream) {
             assert.deepEqual(stream.getRequest(), EXPECTED_REQ);
+            // should only have the setup stream cached in the connection
+            assert.equal(Object.keys(SERVER_CON._streams).length, 2);
+            assert.isOk(SERVER_CON._streams[0]);
             stream.response(_.cloneDeep(EXPECTED_RES));
         });
 
@@ -269,6 +278,9 @@ describe('framed-connection', function () {
 
         response.once('response', function (res) {
             assert.deepEqual(res.getResponse(), EXPECTED_RES);
+            // should only have the setup stream cached in the connection
+            assert.equal(Object.keys(CLIENT_CON._streams).length, 2);
+            assert.isOk(CLIENT_CON._streams[0]);
             done();
         });
     });
@@ -276,6 +288,9 @@ describe('framed-connection', function () {
     it('req/err', function (done) {
         SERVER_CON.once('request', function (stream) {
             assert.deepEqual(stream.getRequest(), EXPECTED_REQ);
+            // should only have the setup stream cached in the connection
+            assert.equal(Object.keys(SERVER_CON._streams).length, 2);
+            assert.isOk(SERVER_CON._streams[0]);
             stream.error(_.cloneDeep(EXPECTED_APPLICATION_ERROR));
         });
 
@@ -285,6 +300,9 @@ describe('framed-connection', function () {
             assert.deepEqual(_.omit(err, 'header', 'metadataEncoding',
                                     'dataEncoding'),
                                     EXPECTED_APPLICATION_ERROR);
+            // should only have the setup stream cached in the connection
+            assert.equal(Object.keys(CLIENT_CON._streams).length, 2);
+            assert.isOk(CLIENT_CON._streams[0]);
             done();
         });
     });
