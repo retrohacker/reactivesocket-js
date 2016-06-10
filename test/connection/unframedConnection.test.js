@@ -161,6 +161,7 @@ describe('connection', function () {
     var WS_CLIENT_STREAM;
 
     before(function (done) {
+        var doneCount = 0;
         WS_SERVER = new Ws.Server({port: PORT});
         WS_SERVER.on('listening', function () {
             WS_SERVER.once('connection', function (socket) {
@@ -178,17 +179,11 @@ describe('connection', function () {
                 });
 
                 SERVER_CON.on('ready', function () {
-                    CLIENT_CON = reactiveSocket.createConnection({
-                        log: LOG,
-                        transport: {
-                            stream: WS_CLIENT_STREAM
-                        },
-                        type: 'client',
-                        metadataEncoding: 'utf-8',
-                        dataEncoding: 'utf-8'
-                    });
+                    doneCount++;
 
-                    CLIENT_CON.on('ready', done);
+                    if (doneCount === 2) {
+                        done();
+                    }
                 });
             });
 
@@ -197,6 +192,23 @@ describe('connection', function () {
                 WS_CLIENT_STREAM = new WSStream({
                     log: LOG,
                     ws: WS_CLIENT
+                });
+                CLIENT_CON = reactiveSocket.createConnection({
+                    log: LOG,
+                    transport: {
+                        stream: WS_CLIENT_STREAM
+                    },
+                    type: 'client',
+                    metadataEncoding: 'utf-8',
+                    dataEncoding: 'utf-8'
+                });
+
+                CLIENT_CON.on('ready', function () {
+                    doneCount++;
+
+                    if (doneCount === 2) {
+                        done();
+                    }
                 });
             });
         });
