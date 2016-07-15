@@ -124,6 +124,28 @@ describe('setup', function () {
     });
 });
 
+describe('lease', function () {
+    it('encode/decode', function () {
+        var seedFrame = {
+            ttl: getRandomInt(0, Math.pow(2, 32)),
+            budget: getRandomInt(0, Math.pow(2, 32)),
+            metadata: 'What have we found',
+            metadataEncoding: METADATA_ENCODING
+        };
+
+        var leaseFrame = frame.getLeaseFrame(seedFrame);
+        var actualFrame = frame.parseFrame(leaseFrame);
+        assert.isObject(actualFrame.header);
+        assert.equal(actualFrame.header.streamId, 0);
+        assert.equal(actualFrame.header.type, CONSTANTS.TYPES.LEASE);
+        assert.equal(actualFrame.header.flags, CONSTANTS.FLAGS.METADATA);
+        assert.equal(actualFrame.ttl, seedFrame.ttl);
+        assert.equal(actualFrame.budget, seedFrame.budget);
+        assert.equal(actualFrame.metadata.toString(), seedFrame.metadata);
+    });
+});
+
+
 describe('error', function () {
     it('encode/decode', function () {
         var seedFrame = {
