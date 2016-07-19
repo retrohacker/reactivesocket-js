@@ -1,6 +1,5 @@
 'use strict';
 
-var fs = require('fs');
 var net = require('net');
 
 var _ = require('lodash');
@@ -13,6 +12,7 @@ var ERROR_CODES = reactiveSocket.ERROR_CODES;
 
 var PORT = process.env.PORT || 1337;
 var HOST = process.env.HOST || 'localhost';
+var POOL_SIZE = 5;
 
 var SERVER_CFG = [{
     port: PORT,
@@ -49,6 +49,26 @@ var SERVER_CFG = [{
     host: HOST
 }];
 
+var EXPECTED_REQ = {
+    data: 'so much trouble in the world',
+    metadata: 'can\'t nobody feel your pain'
+};
+
+var EXPECTED_ERROR_REQ = {
+    data: 'ERROR'
+};
+
+var EXPECTED_RES = {
+    data: 'The world\'s changin everyday, times moving fast',
+    metadata: 'My girl said I need a raise, how long will she last?'
+};
+
+var EXPECTED_APPLICATION_ERROR = {
+    errorCode: ERROR_CODES.APPLICATION_ERROR,
+    metadata: 'You gave them all those old time stars',
+    data: 'Through wars of worlds - invaded by Mars'
+};
+
 describe('TcpConnectionPool', function () {
 
     var LOG = bunyan.createLogger({
@@ -79,6 +99,7 @@ describe('TcpConnectionPool', function () {
                 }
                 count++;
                 SERVERS[cfg.host + ':' + cfg.port] = server;
+
                 if (count === _.keys(SERVER_CFG).length) {
                     done();
                 }
@@ -92,8 +113,19 @@ describe('TcpConnectionPool', function () {
                             framed:true
                         },
                         type: 'server'
-                    }).on('error', function (err) {
-                        console.log('XXX yunong', err);
+                    }).on('error', function (e) {
+                    }).on('request', function (stream) {
+                        if (stream.getRequest().data ===
+                            EXPECTED_ERROR_REQ.data) {
+
+                            stream.error(
+                                _.cloneDeep(EXPECTED_APPLICATION_ERROR));
+                        } else {
+                            // slight delay here so that we can simulate errors
+                            setTimeout(function () {
+                                stream.response(_.cloneDeep(EXPECTED_RES));
+                            }, 500);
+                        }
                     });
                 });
 
@@ -105,32 +137,167 @@ describe('TcpConnectionPool', function () {
     });
 
     afterEach(function (done) {
-        this.timeout(123123123);
+        CONNECTION_POOL.close();
         SERVER_CONNECTION_COUNT = 0;
         var count = 0;
         _(SERVERS).forEach(function (s) {
             s.close(function () {
-                console.log('XXX', count);
                 count++;
+
                 if (count === _.keys(SERVER_CFG).length) {
-                    //done();
+                    done();
                 }
             });
         });
 
         SERVER_CONNECTIONS.forEach(function (s) {
-            s.destroy();
+            s.end();
         });
     });
 
-    it.only('should create a connection pool', function (done) {
-        this.timeout(10000000);
+    it('should create a connection pool', function (done) {
         CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
-            size: 3,
+            size: POOL_SIZE,
             log: LOG,
             hosts: SERVER_CFG
         });
 
-        CONNECTION_POOL.on('ready', done);
+        var isReady;
+        CONNECTION_POOL.on('ready', function () {
+            isReady = true;
+        });
+        CONNECTION_POOL.on('connected', function () {
+            assert.equal(POOL_SIZE,
+                         _.keys(CONNECTION_POOL._connections.connected).length);
+            assert.ok(isReady, 'ready event did not fire');
+            return done();
+        });
     });
+
+    it('should tolerate connection failure', function (done) {
+        CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
+            size: POOL_SIZE,
+            log: LOG,
+            hosts: SERVER_CFG
+        });
+
+        CONNECTION_POOL.on('connected', function () {
+            CONNECTION_POOL.on('connect', function () {
+                done();
+            });
+            CONNECTION_POOL.getConnection()._transportStream.end();
+        });
+    });
+
+    it('should tolerate multiple connection failure', function (done) {
+        CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
+            size: POOL_SIZE,
+            log: LOG,
+            hosts: SERVER_CFG
+        });
+
+        CONNECTION_POOL.on('connected', function () {
+            var reconnectCount = 0;
+            CONNECTION_POOL.on('connect', function () {
+                reconnectCount++;
+
+                if (reconnectCount === POOL_SIZE) {
+                    done();
+                }
+            });
+            _.forEach(CONNECTION_POOL._connections.connected, function (c) {
+                c._tcpConn.end();
+            });
+        });
+    });
+
+    it('should get a connection and req/res', function (done) {
+
+        CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
+            size: POOL_SIZE,
+            log: LOG,
+            hosts: SERVER_CFG
+        });
+
+
+        CONNECTION_POOL.on('connected', function () {
+            var response = CONNECTION_POOL.getConnection()
+                .request(_.cloneDeep(EXPECTED_REQ));
+            response.on('response', function (res) {
+                assert.deepEqual(res.getResponse(), EXPECTED_RES);
+                done();
+            });
+        });
+    });
+
+    it('should get a connection and req/err', function (done) {
+
+        CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
+            size: POOL_SIZE,
+            log: LOG,
+            hosts: SERVER_CFG
+        });
+
+
+        CONNECTION_POOL.on('connected', function () {
+            var response = CONNECTION_POOL.getConnection()
+                .request(_.cloneDeep(EXPECTED_ERROR_REQ));
+            response.once('application-error', function (err) {
+                assert.deepEqual(_.omit(err, 'header', 'metadataEncoding',
+                                        'dataEncoding'),
+                EXPECTED_APPLICATION_ERROR);
+                done();
+            });
+        });
+    });
+
+    it('should get a connection, send req/res, bad connection before res',
+       function (done) {
+           this.timeout(123123123);
+
+           CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
+            size: POOL_SIZE,
+            log: LOG,
+            hosts: SERVER_CFG
+        });
+
+           var connection;
+
+           CONNECTION_POOL.on('connected', function () {
+            connection = CONNECTION_POOL.getConnection();
+            var response = connection.request(_.cloneDeep(EXPECTED_REQ));
+            response.on('response', function (res) {
+                throw new Error('should not get response');
+            });
+            response.on('error', function (err) {
+                done();
+            });
+            connection._transportStream.end();
+        });
+       });
+
+    it('should get a connection, send req/res, bad connection after res ',
+       function (done) {
+
+           CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
+            size: POOL_SIZE,
+            log: LOG,
+            hosts: SERVER_CFG
+        });
+
+           var connection;
+
+           CONNECTION_POOL.on('connected', function () {
+            connection = CONNECTION_POOL.getConnection();
+            var response = connection.request(_.cloneDeep(EXPECTED_REQ));
+            response.on('response', function (res) {
+                assert.deepEqual(res.getResponse(), EXPECTED_RES);
+                connection._transportStream.end();
+                setImmediate(done);
+            });
+            response.on('error', function (err) {
+                throw new Error('should not get err');
+            });
+        });
+       });
 });

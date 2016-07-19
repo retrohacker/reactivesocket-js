@@ -100,7 +100,8 @@ describe('TcpConnection', function () {
 
         TCP_CLIENT = reactiveSocket.createTcpConnection({
             log: LOG,
-            connOpts: CLIENT_CONN_OPTS
+            connOpts: CLIENT_CONN_OPTS,
+            reconnect: true
         });
 
         var readyCount = 0;
