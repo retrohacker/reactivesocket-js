@@ -87,6 +87,8 @@ describe('TcpConnection', function () {
                 type: 'server'
             });
 
+            // we want to end the server 3 times and see if the client
+            // reconnects
             var endCount = 3;
             rs.on('ready', function () {
                 endCount--;
@@ -100,7 +102,8 @@ describe('TcpConnection', function () {
 
         TCP_CLIENT = reactiveSocket.createTcpConnection({
             log: LOG,
-            connOpts: CLIENT_CONN_OPTS
+            connOpts: CLIENT_CONN_OPTS,
+            reconnect: true
         });
 
         var readyCount = 0;
@@ -108,6 +111,55 @@ describe('TcpConnection', function () {
         TCP_CLIENT.on('ready', function () {
             readyCount++;
 
+            // we check that the client has emitted ready 4 times, and that the
+            // connection's been closed 3 times.
+            if (readyCount === 4 && closeCount === 3) {
+                done();
+            }
+        });
+
+        TCP_CLIENT.on('close', function () {
+            closeCount++;
+        });
+    });
+
+    it('should reconnect when rs connection errors', function (done) {
+        TCP_SERVER.on('connection', function (server) {
+            var rs = reactiveSocket.createConnection({
+                log: LOG,
+                transport: {
+                    stream: server,
+                    framed:true
+                },
+                type: 'server'
+            });
+
+            // we want to end the server 3 times and see if the client
+            // reconnects
+            var endCount = 3;
+            rs.on('ready', function () {
+                endCount--;
+
+                if (endCount === 0) {
+                    return;
+                }
+                TCP_CLIENT.getConnection().emit('error');
+            });
+        });
+
+        TCP_CLIENT = reactiveSocket.createTcpConnection({
+            log: LOG,
+            connOpts: CLIENT_CONN_OPTS,
+            reconnect: true
+        });
+
+        var readyCount = 0;
+        var closeCount = 0;
+        TCP_CLIENT.on('ready', function () {
+            readyCount++;
+
+            // we check that the client has emitted ready 4 times, and that the
+            // connection's been closed 3 times.
             if (readyCount === 4 && closeCount === 3) {
                 done();
             }

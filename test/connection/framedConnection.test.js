@@ -182,7 +182,7 @@ describe('framed-connection', function () {
     var SERVER_CON;
     var CLIENT_CON;
 
-    before(function (done) {
+    beforeEach(function (done) {
         TCP_SERVER = net.createServer(function (con) {
             TCP_SERVER_STREAM = con;
             SERVER_CON = reactiveSocket.createConnection({
@@ -223,7 +223,7 @@ describe('framed-connection', function () {
         });
     });
 
-    after(function (done) {
+    afterEach(function (done) {
         var count = 0;
         TCP_CLIENT_STREAM.once('close', function () {
             count++;
@@ -322,6 +322,95 @@ describe('framed-connection', function () {
                 assert.isOk(CLIENT_CON._streams.streams[0]);
                 done();
             });
+        });
+    });
+
+});
+
+describe('framed-connection connection errors', function () {
+    var LOG = bunyan.createLogger({
+        name: 'framed connection tests',
+        level: process.env.LOG_LEVEL || bunyan.INFO,
+        serializers: bunyan.stdSerializers
+    });
+    LOG.addSerializers({
+        buffer: function (buf) {
+            return buf.toString();
+        }
+    });
+
+    var TCP_SERVER;
+    var TCP_CLIENT_STREAM;
+
+    var SERVER_CON;
+    var CLIENT_CON;
+
+    beforeEach(function (done) {
+        TCP_SERVER = net.createServer(function (con) {
+            SERVER_CON = reactiveSocket.createConnection({
+                log: LOG,
+                transport: {
+                    stream: con,
+                    framed: true
+                },
+                type: 'server'
+            });
+        });
+
+        TCP_SERVER.listen({
+            port: PORT,
+            host: HOST
+        }, function (err) {
+            if (err) {
+                throw err;
+            }
+
+            TCP_CLIENT_STREAM = net.connect(PORT, HOST, function (e) {
+                if (e) {
+                    throw e;
+                }
+                CLIENT_CON = reactiveSocket.createConnection({
+                    log: LOG,
+                    transport: {
+                        stream: TCP_CLIENT_STREAM,
+                        framed: true
+                    },
+                    type: 'client',
+                    metadataEncoding: 'utf-8',
+                    dataEncoding: 'utf-8'
+                });
+
+                CLIENT_CON.on('ready', done);
+            });
+        });
+    });
+
+    afterEach(function (done) {
+        TCP_SERVER.close(done);
+    });
+
+    it('connection error', function (done) {
+        SERVER_CON.once('request', function (stream) {
+            CLIENT_CON._transportStream.destroy(new Error('kthxbye'));
+        });
+
+        var response = CLIENT_CON.request(_.cloneDeep(EXPECTED_REQ));
+
+        var errCount = 0;
+        response.on('error', function (err) {
+            errCount++;
+
+            if (errCount === 2) {
+                done();
+            }
+        });
+
+        CLIENT_CON.on('error', function (err) {
+            errCount++;
+
+            if (errCount === 2) {
+                done();
+            }
         });
     });
 });
