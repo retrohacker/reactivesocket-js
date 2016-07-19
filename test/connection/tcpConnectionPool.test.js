@@ -290,10 +290,26 @@ describe('TcpConnectionPool', function () {
         });
     });
 
-    it('should handle pool size larger than actual available hosts',
+    it('should gracefully handle pool size larger than actual available hosts',
        function (done) {
 
-    });
+           var poolSize = _.keys(SERVER_CFG).length + 5;
+           CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
+            size: poolSize,
+            log: LOG,
+            hosts: SERVER_CFG
+        });
+
+           CONNECTION_POOL.on('connected', function () {
+            var connections = CONNECTION_POOL._connections;
+            var connected = connections.connected;
+            assert.equal(SERVER_CFG.length, _.keys(connected).length,
+                         'pool size should be size of servers');
+            var free = connections.free;
+            assert.equal(0, _.keys(free).length, 'free list should be empty');
+            done();
+        });
+       });
 
     it('should get a connection and req/res', function (done) {
 
