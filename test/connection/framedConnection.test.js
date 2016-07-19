@@ -340,7 +340,6 @@ describe('framed-connection connection errors', function () {
     });
 
     var TCP_SERVER;
-    var TCP_SERVER_STREAM;
     var TCP_CLIENT_STREAM;
 
     var SERVER_CON;
@@ -348,7 +347,6 @@ describe('framed-connection connection errors', function () {
 
     beforeEach(function (done) {
         TCP_SERVER = net.createServer(function (con) {
-            TCP_SERVER_STREAM = con;
             SERVER_CON = reactiveSocket.createConnection({
                 log: LOG,
                 transport: {
@@ -401,6 +399,7 @@ describe('framed-connection connection errors', function () {
         var errCount = 0;
         response.on('error', function (err) {
             errCount++;
+
             if (errCount === 2) {
                 done();
             }
@@ -408,6 +407,7 @@ describe('framed-connection connection errors', function () {
 
         CLIENT_CON.on('error', function (err) {
             errCount++;
+
             if (errCount === 2) {
                 done();
             }
