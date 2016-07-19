@@ -27,7 +27,104 @@ and WebSockets via the [yws-stream](https://github.com/yunong/ws-stream)
 module. You are of course, free to inject other transports.
 
 ## Connection Quick Start
-### TCP
+This library supports 3 classes of clients. A fully managed connection pool,
+which automatically manages a pool of connections and takes care of
+automatically reconnecting and picking a connection from the pool. A fully
+managed single TCP connection, which can be configured to automatically
+reconnect if the TCP connection disconnects. Lastly a "raw" ReactiveSocket
+connection, which doesn't include any retry or transport logic. You provide a
+transport stream to plug in to the connection. This is the most flexible
+client, as you can use it with any transport mechanism. Examples for TCP and
+WebSockets are provided.
+
+### TCP Connection Pool
+```javascript
+var bunyan = require('bunyan');
+var reactiveSocket = require('reactivesocket');
+
+var connectionPool = reactiveSocket.createTcpConnectionPool({
+    size: 5, // size of the pool, defaults to 5
+    log: bunyan.createLogger({name: 'rsConnectionPool'}),
+    hosts: [{ // array of host:port objects to connect to
+        host: 'localhost',
+        port: 1337
+    },{
+        host: 'localhost',
+        port: 1338
+    },{
+        host: 'localhost',
+        port: 1339
+    },{
+        host: 'localhost',
+        port: 1340
+    },{
+        host: 'localhost',
+        port: 1341
+    },{
+        host: 'localhost',
+        port: 1342
+    },{
+        host: 'localhost',
+        port: 1343
+    }]
+});
+
+connectionPool.on('ready', function () {
+    var stream = connectionPool.getConnection().request({
+        metadata: 'You reached for the secret too soon, you cried for the moon',
+        data: 'Shine on you crazy diamond.'
+    });
+
+    stream.on('response', function (res) {
+        console.log('got response', res.getResponse());
+    });
+
+    stream.on('application-error', function (err) {
+        console.error('got error', err);
+    });
+
+    stream.on('error', function (err) {
+        console.error('got rs connection error', err);
+    });
+});
+
+```
+
+### TCP Connection
+```javascript
+var bunyan = require('bunyan');
+var reactiveSocket = require('reactivesocket');
+
+var tcpConnection = reactiveSocket.createTcpConnection({
+    log: bunyan.createLogger({name: 'rsConnectionPool'}),
+    connOpts: { // host to connect to
+        host: 'localhost',
+        port: 1337
+    },
+    reconnect: true // whether to reconnect if the TCP connection dies
+});
+
+tcpConnection.on('ready', function () {
+    var stream = tcpConnection.getConnection().request({
+        metadata: 'You reached for the secret too soon, you cried for the moon',
+        data: 'Shine on you crazy diamond.'
+    });
+
+    stream.on('response', function (res) {
+        console.log('got response', res.getResponse());
+    });
+
+    stream.on('application-error', function (err) {
+        console.error('got error', err);
+    });
+
+    stream.on('error', function (err) {
+        console.error('got rs connection error', err);
+    });
+});
+```
+
+### Raw TCP
 ```javascript
 var net = require('net');
 
@@ -65,7 +162,7 @@ var transportStream = net.connect(1337, 'localhost', function (err) {
     });
 });
 ```
-### WebSocket
+### Raw WebSocket
 ```javascript
 var bunyan = require('bunyan');
 var reactiveSocket = require('reactivesocket');
