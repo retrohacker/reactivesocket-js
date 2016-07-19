@@ -49,6 +49,29 @@ var SERVER_CFG = [{
     host: HOST
 }];
 
+var EXTRA_SERVER_CFG = [{
+    host: HOST,
+    port: ++PORT
+}, {
+    host: HOST,
+    port: ++PORT
+}, {
+    host: HOST,
+    port: ++PORT
+}, {
+    host: HOST,
+    port: ++PORT
+}, {
+    host: HOST,
+    port: ++PORT
+}, {
+    host: HOST,
+    port: ++PORT
+}, {
+    host: HOST,
+    port: ++PORT
+}];
+
 var EXPECTED_REQ = {
     data: 'so much trouble in the world',
     metadata: 'can\'t nobody feel your pain'
@@ -89,49 +112,57 @@ describe('TcpConnectionPool', function () {
     var CONNECTION_POOL;
     var SERVER_CONNECTION_COUNT = 0;
 
+    function createServer(cfg, cb) {
+        var server = net.createServer();
+        server.listen(cfg, function (err) {
+            if (err) {
+                throw err;
+            }
+            SERVERS[cfg.host + ':' + cfg.port] = server;
+
+            server.on('connection', function (s) {
+                SERVER_CONNECTIONS.push(s);
+                SERVER_CONNECTION_COUNT++;
+                reactiveSocket.createConnection({
+                    log: LOG,
+                    transport: {
+                        stream: s,
+                        framed:true
+                    },
+                    type: 'server'
+                }).on('error', function (e) {
+                }).on('request', function (stream) {
+                    if (stream.getRequest().data ===
+                        EXPECTED_ERROR_REQ.data) {
+
+                        stream.error(
+                            _.cloneDeep(EXPECTED_APPLICATION_ERROR));
+                    } else {
+                        // slight delay here so that we can simulate errors
+                        setTimeout(function () {
+                            stream.response(_.cloneDeep(EXPECTED_RES));
+                        }, 500);
+                    }
+                });
+            });
+
+            server.on('error', function (e) {
+                throw e;
+            });
+
+            cb();
+        });
+    }
+
     beforeEach(function (done) {
         var count = 0;
-        _(SERVER_CFG).forEach(function (cfg) {
-            var server = net.createServer();
-            server.listen(cfg, function (err) {
-                if (err) {
-                    throw err;
-                }
+        _.concat(SERVER_CFG, EXTRA_SERVER_CFG).forEach(function (cfg) {
+            createServer(cfg, function () {
                 count++;
-                SERVERS[cfg.host + ':' + cfg.port] = server;
 
                 if (count === _.keys(SERVER_CFG).length) {
                     done();
                 }
-                server.on('connection', function (s) {
-                    SERVER_CONNECTIONS.push(s);
-                    SERVER_CONNECTION_COUNT++;
-                    reactiveSocket.createConnection({
-                        log: LOG,
-                        transport: {
-                            stream: s,
-                            framed:true
-                        },
-                        type: 'server'
-                    }).on('error', function (e) {
-                    }).on('request', function (stream) {
-                        if (stream.getRequest().data ===
-                            EXPECTED_ERROR_REQ.data) {
-
-                            stream.error(
-                                _.cloneDeep(EXPECTED_APPLICATION_ERROR));
-                        } else {
-                            // slight delay here so that we can simulate errors
-                            setTimeout(function () {
-                                stream.response(_.cloneDeep(EXPECTED_RES));
-                            }, 500);
-                        }
-                    });
-                });
-
-                server.on('error', function (e) {
-                    throw e;
-                });
             });
         });
     });
@@ -189,7 +220,7 @@ describe('TcpConnectionPool', function () {
         });
     });
 
-    it('should tolerate multiple connection failure', function (done) {
+    it('should tolerate multiple connection failures', function (done) {
         CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
             size: POOL_SIZE,
             log: LOG,
@@ -211,6 +242,59 @@ describe('TcpConnectionPool', function () {
         });
     });
 
+    it('should update hosts', function (done) {
+        CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
+            size: POOL_SIZE,
+            log: LOG,
+            hosts: SERVER_CFG
+        });
+
+        var updatedHosts = _.cloneDeep(EXTRA_SERVER_CFG);
+
+        CONNECTION_POOL.on('connected', function () {
+            var connections = CONNECTION_POOL._connections;
+            var connected = connections.connected;
+            var connection = _.keys(connected)[0];
+            updatedHosts.push(connected[connection]._connOpts);
+            var updatedHostKeys = [];
+            _.forEach(updatedHosts, function (h) {
+                updatedHostKeys.push(h.host + ':' + h.port);
+            });
+
+            CONNECTION_POOL.updateHosts(updatedHosts);
+            // Lame way to wait for new connections to be made
+            setImmediate(function () {
+                assert.ok(connected[connection], 'live connection that spans' +
+                    'previous and current hosts should still be connected');
+                // verify that pool only contains connections from the updated
+                // list
+                var connectedKeys = _.keys(connected);
+                assert.equal(connectedKeys.length, POOL_SIZE,
+                             'connected pool size should be the same');
+                _.forEach(connectedKeys, function (k) {
+                    assert.ok(_.findIndex(updatedHostKeys, k),
+                              'host ' + k + ' does not exist in host list');
+                });
+                var connectingKeys = _.keys(connections.connecting);
+                _.forEach(connectingKeys, function (k) {
+                    assert.ok(_.findIndex(updatedHostKeys, k),
+                              'host ' + k + ' does not exist in host list');
+                });
+                var freeKeys = _.keys(connections.free);
+                _.forEach(freeKeys, function (k) {
+                    assert.ok(_.findIndex(updatedHostKeys, k),
+                              'host ' + k + ' does not exist in host list');
+                });
+                done();
+            });
+        });
+    });
+
+    it('should handle pool size larger than actual available hosts',
+       function (done) {
+
+    });
+
     it('should get a connection and req/res', function (done) {
 
         CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
@@ -218,7 +302,6 @@ describe('TcpConnectionPool', function () {
             log: LOG,
             hosts: SERVER_CFG
         });
-
 
         CONNECTION_POOL.on('connected', function () {
             var response = CONNECTION_POOL.getConnection()
