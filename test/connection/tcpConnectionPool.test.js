@@ -350,7 +350,8 @@ describe('TcpConnectionPool', function () {
         });
     });
 
-    it('should get a connection, send req/res, bad connection before res', function (done) {
+    it('should get a connection, send req/res, bad connection before res',
+       function (done) {
         CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
             size: POOL_SIZE,
             log: LOG,
@@ -372,17 +373,18 @@ describe('TcpConnectionPool', function () {
         });
     });
 
-    it('should get a connection, send req/res, bad connection after res ', function (done) {
+    it('should get a connection, send req/res, bad connection after res',
+       function (done) {
 
-        CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
+           CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
             size: POOL_SIZE,
             log: LOG,
             hosts: SERVER_CFG
         });
 
-        var connection;
+           var connection;
 
-        CONNECTION_POOL.on('connected', function () {
+           CONNECTION_POOL.on('connected', function () {
             connection = CONNECTION_POOL.getConnection();
             var response = connection.request(_.cloneDeep(EXPECTED_REQ));
             response.on('response', function (res) {
@@ -394,16 +396,17 @@ describe('TcpConnectionPool', function () {
                 throw new Error('should not get err');
             });
         });
-    });
+       });
 
-    it('should return a null connection when there are no connected hosts', function (done) {
-       CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
+    it('should return a null connection when there are no connected hosts',
+       function (done) {
+        CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
            size: POOL_SIZE,
            log: LOG,
            hosts: [] // empty array so no hosts to connect to
        });
 
-       assert.notOk(CONNECTION_POOL.getConnection());
-       done();
+        assert.notOk(CONNECTION_POOL.getConnection());
+        done();
     });
 });
