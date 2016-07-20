@@ -183,6 +183,7 @@ describe('framed-connection', function () {
     var CLIENT_CON;
 
     beforeEach(function (done) {
+        var count = 0;
         TCP_SERVER = net.createServer(function (con) {
             TCP_SERVER_STREAM = con;
             SERVER_CON = reactiveSocket.createConnection({
@@ -192,6 +193,13 @@ describe('framed-connection', function () {
                     framed: true
                 },
                 type: 'server'
+            });
+            SERVER_CON.on('ready', function () {
+                count++;
+
+                if (count === 2) {
+                    done();
+                }
             });
         });
 
@@ -218,7 +226,13 @@ describe('framed-connection', function () {
                     dataEncoding: 'utf-8'
                 });
 
-                CLIENT_CON.on('ready', done);
+                CLIENT_CON.on('ready', function () {
+                    count++;
+
+                    if (count === 2) {
+                        done();
+                    }
+                });
             });
         });
     });
@@ -346,6 +360,7 @@ describe('framed-connection connection errors', function () {
     var CLIENT_CON;
 
     beforeEach(function (done) {
+        var count = 0;
         TCP_SERVER = net.createServer(function (con) {
             SERVER_CON = reactiveSocket.createConnection({
                 log: LOG,
@@ -354,6 +369,13 @@ describe('framed-connection connection errors', function () {
                     framed: true
                 },
                 type: 'server'
+            });
+            SERVER_CON.on('ready', function () {
+                count++;
+
+                if (count === 2) {
+                    done();
+                }
             });
         });
 
@@ -380,7 +402,13 @@ describe('framed-connection connection errors', function () {
                     dataEncoding: 'utf-8'
                 });
 
-                CLIENT_CON.on('ready', done);
+                CLIENT_CON.on('ready', function () {
+                    count++;
+
+                    if (count === 2) {
+                        done();
+                    }
+                });
             });
         });
     });
