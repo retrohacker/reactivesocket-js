@@ -5,6 +5,7 @@ var assert = require('chai').assert;
 
 var frame = require('../../lib/protocol/frame');
 var getRandomInt = require('../common/getRandomInt');
+var getRandomBoolean = require('../common/getRandomBoolean');
 
 var CONSTANTS = require('../../lib/protocol/constants');
 var FLAGS = CONSTANTS.FLAGS;
@@ -16,7 +17,7 @@ describe('header', function () {
         var seedFrame = {
             length: 0, // 0 since we have no additional frame
             type: CONSTANTS.TYPES.REQUEST_RESPONSE,
-            flags: CONSTANTS.FLAGS.METADATA,
+            flags: CONSTANTS.FLAGS.NONE,
             streamId: 4
         };
 
@@ -31,6 +32,7 @@ describe('header', function () {
 
         var actualFrame = frame.parseFrame(frame.getFrameHeader(seedFrame));
         assert.deepEqual(expectedParsedFrame, _.omit(actualFrame,
+                                                     'data',
                                                      'dataEncoding',
                                                      'metadataEncoding'));
     });
@@ -124,28 +126,6 @@ describe('setup', function () {
     });
 });
 
-describe('lease', function () {
-    it('encode/decode', function () {
-        var seedFrame = {
-            ttl: getRandomInt(0, Math.pow(2, 32)),
-            budget: getRandomInt(0, Math.pow(2, 32)),
-            metadata: 'What have we found',
-            metadataEncoding: METADATA_ENCODING
-        };
-
-        var leaseFrame = frame.getLeaseFrame(seedFrame);
-        var actualFrame = frame.parseFrame(leaseFrame);
-        assert.isObject(actualFrame.header);
-        assert.equal(actualFrame.header.streamId, 0);
-        assert.equal(actualFrame.header.type, CONSTANTS.TYPES.LEASE);
-        assert.equal(actualFrame.header.flags, CONSTANTS.FLAGS.METADATA);
-        assert.equal(actualFrame.ttl, seedFrame.ttl);
-        assert.equal(actualFrame.budget, seedFrame.budget);
-        assert.equal(actualFrame.metadata.toString(), seedFrame.metadata);
-    });
-});
-
-
 describe('error', function () {
     it('encode/decode', function () {
         var seedFrame = {
@@ -164,6 +144,45 @@ describe('error', function () {
         assert.equal(actualFrame.header.flags, CONSTANTS.FLAGS.METADATA);
         assert.equal(actualFrame.errorCode, seedFrame.errorCode);
         assert.equal(actualFrame.metadata.toString(), seedFrame.metadata);
+        assert.equal(actualFrame.data.toString(), seedFrame.data);
+    });
+});
+
+describe('lease', function () {
+    it('encode/decode', function () {
+        var seedFrame = {
+            ttl: getRandomInt(0, Math.pow(2, 32)),
+            budget: getRandomInt(0, Math.pow(2, 32)),
+            metadata: 'You can\'t send me more than that!',
+            metadataEncoding: METADATA_ENCODING
+        };
+
+        var leaseFrame = frame.getLeaseFrame(seedFrame);
+        var actualFrame = frame.parseFrame(leaseFrame);
+        assert.isObject(actualFrame.header);
+        assert.equal(actualFrame.header.streamId, 0);
+        assert.equal(actualFrame.header.type, CONSTANTS.TYPES.LEASE);
+        assert.equal(actualFrame.header.flags, CONSTANTS.FLAGS.METADATA);
+        assert.equal(actualFrame.ttl, seedFrame.ttl);
+        assert.equal(actualFrame.budget, seedFrame.budget);
+        assert.equal(actualFrame.metadata.toString(), seedFrame.metadata);
+    });
+});
+
+describe('keepalive', function () {
+    it('encode/decode', function () {
+        var seedFrame = {
+            response: getRandomBoolean(),
+            data: 'Are you still alive?',
+            dataEncoding: DATA_ENCODING
+        };
+
+        var keepaliveFrame = frame.getKeepaliveFrame(seedFrame);
+        var actualFrame = frame.parseFrame(keepaliveFrame);
+        assert.isObject(actualFrame.header);
+        assert.equal(actualFrame.header.streamId, 0);
+        assert.equal(actualFrame.header.type, CONSTANTS.TYPES.KEEPALIVE);
+        assert.equal(actualFrame.response, seedFrame.response);
         assert.equal(actualFrame.data.toString(), seedFrame.data);
     });
 });
