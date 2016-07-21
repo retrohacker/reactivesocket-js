@@ -242,7 +242,7 @@ describe('TcpConnectionPool', function () {
         });
     });
 
-    it('should update hosts', function (done) {
+    it('should update hosts with new hosts', function (done) {
         CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
             size: POOL_SIZE,
             log: LOG,
@@ -262,12 +262,67 @@ describe('TcpConnectionPool', function () {
             });
 
             CONNECTION_POOL.updateHosts(updatedHosts);
-            // Lame way to wait for new connections to be made
-            setImmediate(function () {
-                assert.ok(connected[connection], 'live connection that spans' +
-                    'previous and current hosts should still be connected');
-                // verify that pool only contains connections from the updated
-                // list
+            CONNECTION_POOL.on('connect', function () {
+                if (_.keys(connected).length === POOL_SIZE) {
+                    assert.ok(connected[connection],
+                              'live connection that spans previous and ' +
+                                  'current hosts should still be connected');
+                    // verify that pool only contains connections from the
+                    // updated list
+                    var connectedKeys = _.keys(connected);
+                    assert.equal(connectedKeys.length, POOL_SIZE,
+                                 'connected pool size should be the same');
+                    _.forEach(connectedKeys, function (k) {
+                        assert.ok(_.findIndex(updatedHostKeys, k),
+                                  'host ' + k + ' does not exist in host list');
+                    });
+                    var connectingKeys = _.keys(connections.connecting);
+                    _.forEach(connectingKeys, function (k) {
+                        assert.ok(_.findIndex(updatedHostKeys, k),
+                                  'host ' + k + ' does not exist in host list');
+                    });
+                    var freeKeys = _.keys(connections.free);
+                    _.forEach(freeKeys, function (k) {
+                        assert.ok(_.findIndex(updatedHostKeys, k),
+                                  'host ' + k + ' does not exist in host list');
+                    });
+                    done();
+                }
+            });
+        });
+    });
+
+    it('should update hosts with same hosts', function (done) {
+        CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
+            size: POOL_SIZE,
+            log: LOG,
+            hosts: SERVER_CFG
+        });
+
+        var updatedHosts = _.cloneDeep(EXTRA_SERVER_CFG);
+
+        CONNECTION_POOL.on('connected', function () {
+            var connections = CONNECTION_POOL._connections;
+            var connected = connections.connected;
+            var connection = _.keys(connected)[0];
+            updatedHosts.push(connected[connection]._connOpts);
+            var updatedHostKeys = [];
+            _.forEach(updatedHosts, function (h) {
+                updatedHostKeys.push(h.host + ':' + h.port);
+            });
+
+            CONNECTION_POOL.updateHosts(SERVER_CFG);
+            CONNECTION_POOL.on('connect', function () {
+                assert.fail('should not emit connect event');
+            });
+
+            // lame way to wait for reconnect
+            setTimeout(function () {
+                assert.ok(connected[connection],
+                          'live connection that spans previous and ' +
+                              'current hosts should still be connected');
+                // verify that pool only contains connections from the
+                // updated list
                 var connectedKeys = _.keys(connected);
                 assert.equal(connectedKeys.length, POOL_SIZE,
                              'connected pool size should be the same');
@@ -286,7 +341,7 @@ describe('TcpConnectionPool', function () {
                               'host ' + k + ' does not exist in host list');
                 });
                 done();
-            });
+            }, 1000);
         });
     });
 
