@@ -163,6 +163,121 @@ describe('frame-connection-setup', function () {
     });
 });
 
+describe('framed-connection-keepalive', function () {
+    var LOG = bunyan.createLogger({
+        name: 'framed connection keepalive tests',
+        level: process.env.LOG_LEVEL || bunyan.INFO,
+        serializers: bunyan.stdSerializers
+    });
+    LOG.addSerializers({
+        buffer: function (buf) {
+            return buf.toString();
+        }
+    });
+
+    var TCP_SERVER;
+    var TCP_SERVER_STREAM;
+    var TCP_CLIENT_STREAM;
+
+    var SERVER_CON;
+    var CLIENT_CON;
+
+    beforeEach(function (done) {
+        var count = 0;
+        TCP_SERVER = net.createServer(function (con) {
+            TCP_SERVER_STREAM = con;
+            SERVER_CON = reactiveSocket.createConnection({
+                log: LOG,
+                transport: {
+                    stream: con,
+                    framed: true
+                },
+                type: 'server'
+            });
+            SERVER_CON.on('ready', function () {
+                count++;
+
+                if (count === 2) {
+                    done();
+                }
+            });
+        });
+
+        TCP_SERVER.listen({
+            port: PORT,
+            host: HOST
+        }, function (err) {
+            if (err) {
+                throw err;
+            }
+
+            TCP_CLIENT_STREAM = net.connect(PORT, HOST, function (e) {
+                if (e) {
+                    throw e;
+                }
+                CLIENT_CON = reactiveSocket.createConnection({
+                    log: LOG,
+                    transport: {
+                        stream: TCP_CLIENT_STREAM,
+                        framed: true
+                    },
+                    type: 'client',
+                    metadataEncoding: 'utf-8',
+                    dataEncoding: 'utf-8'
+                });
+
+                CLIENT_CON.on('ready', function () {
+                    count++;
+
+                    if (count === 2) {
+                        done();
+                    }
+                });
+            });
+        });
+    });
+
+    afterEach(function (done) {
+        var count = 0;
+        TCP_CLIENT_STREAM.once('close', function () {
+            count++;
+
+            if (count === 2) {
+                done();
+            }
+        });
+        TCP_SERVER_STREAM.on('end', function () {
+            TCP_SERVER.close(function () {
+                count++;
+
+                if (count === 2) {
+                    done();
+                }
+            });
+        });
+        TCP_SERVER_STREAM.end();
+        TCP_CLIENT_STREAM.end();
+    });
+
+    it('keepalive', function (done) {
+        var count = 0;
+        SERVER_CON.on('keepalive', function () {
+            count++;
+
+            if (count === 2) {
+                done();
+            }
+        });
+        CLIENT_CON.on('keepalive', function () {
+            count++;
+
+            if (count === 2) {
+                done();
+            }
+        });
+    });
+});
+
 describe('framed-connection', function () {
     var LOG = bunyan.createLogger({
         name: 'framed connection tests',
