@@ -82,9 +82,8 @@ describe('framing stream', function () {
             assert.equal(actualFrame.header.flags,
                          FLAGS.METADATA | FRAME.flags);
             assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
-            assert.deepEqual(actualFrame.setup, _.omit(FRAME, 'data',
-                                                       'metadata', 'flags',
-                                                       'type'));
+            assert.deepEqual(_.omit(actualFrame.setup, 'lease'),
+                _.omit(FRAME, 'data', 'metadata', 'flags', 'type'));
             assert.deepEqual(actualFrame.data, FRAME.data);
             assert.deepEqual(actualFrame.metadata, FRAME.metadata);
             done();
@@ -115,9 +114,8 @@ describe('framing stream', function () {
             assert.equal(actualFrame.header.flags,
                          FLAGS.METADATA | FRAME.flags);
             assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
-            assert.deepEqual(actualFrame.setup, _.omit(FRAME, 'data',
-                                                       'metadata', 'flags',
-                                                       'type'));
+            assert.deepEqual(_.omit(actualFrame.setup, 'lease'),
+                _.omit(FRAME, 'data', 'metadata', 'flags', 'type'));
             assert.deepEqual(actualFrame.data, FRAME.data);
             assert.deepEqual(actualFrame.metadata, FRAME.metadata);
 
@@ -144,9 +142,8 @@ describe('framing stream', function () {
             assert.equal(actualFrame.header.flags,
                          FLAGS.METADATA | FRAME.flags);
             assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
-            assert.deepEqual(actualFrame.setup, _.omit(FRAME, 'data',
-                                                       'metadata', 'flags',
-                                                       'type'));
+            assert.deepEqual(_.omit(actualFrame.setup, 'lease'),
+                _.omit(FRAME, 'data', 'metadata', 'flags', 'type'));
             assert.deepEqual(actualFrame.data, FRAME.data);
             assert.deepEqual(actualFrame.metadata, FRAME.metadata);
             done();
@@ -170,9 +167,8 @@ describe('framing stream', function () {
             assert.equal(actualFrame.header.flags,
                          FLAGS.METADATA | FRAME.flags);
             assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
-            assert.deepEqual(actualFrame.setup, _.omit(FRAME, 'data',
-                                                       'metadata', 'flags',
-                                                       'type'));
+            assert.deepEqual(_.omit(actualFrame.setup, 'lease'),
+                _.omit(FRAME, 'data', 'metadata', 'flags', 'type'));
             assert.deepEqual(actualFrame.data, FRAME.data);
             assert.deepEqual(actualFrame.metadata, FRAME.metadata);
 
@@ -201,9 +197,8 @@ describe('framing stream', function () {
             assert.equal(actualFrame.header.flags,
                          FLAGS.METADATA | FRAME.flags);
             assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
-            assert.deepEqual(actualFrame.setup, _.omit(FRAME, 'data',
-                                                       'metadata', 'flags',
-                                                       'type'));
+            assert.deepEqual(_.omit(actualFrame.setup, 'lease'),
+                _.omit(FRAME, 'data', 'metadata', 'flags', 'type'));
             assert.deepEqual(actualFrame.data, FRAME.data);
             assert.deepEqual(actualFrame.metadata, FRAME.metadata);
 
@@ -233,9 +228,8 @@ describe('framing stream', function () {
             assert.equal(actualFrame.header.flags,
                          FLAGS.METADATA | FRAME.flags);
             assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
-            assert.deepEqual(actualFrame.setup, _.omit(FRAME, 'data',
-                                                       'metadata', 'flags',
-                                                       'type'));
+            assert.deepEqual(_.omit(actualFrame.setup, 'lease'),
+                _.omit(FRAME, 'data', 'metadata', 'flags', 'type'));
             assert.deepEqual(actualFrame.data, FRAME.data);
             assert.deepEqual(actualFrame.metadata, FRAME.metadata);
 
@@ -265,9 +259,8 @@ describe('framing stream', function () {
             assert.equal(actualFrame.header.flags,
                          FLAGS.METADATA | FRAME.flags);
             assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
-            assert.deepEqual(actualFrame.setup, _.omit(FRAME, 'data',
-                                                       'metadata', 'flags',
-                                                       'type'));
+            assert.deepEqual(_.omit(actualFrame.setup, 'lease'),
+                _.omit(FRAME, 'data', 'metadata', 'flags', 'type'));
             assert.deepEqual(actualFrame.data, FRAME.data);
             assert.deepEqual(actualFrame.metadata, FRAME.metadata);
 
@@ -300,9 +293,8 @@ describe('framing stream', function () {
             assert.equal(actualFrame.header.flags,
                          FLAGS.METADATA | FRAME.flags);
             assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
-            assert.deepEqual(actualFrame.setup, _.omit(FRAME, 'data',
-                                                       'metadata', 'flags',
-                                                       'type'));
+            assert.deepEqual(_.omit(actualFrame.setup, 'lease'),
+                _.omit(FRAME, 'data', 'metadata', 'flags', 'type'));
             assert.deepEqual(actualFrame.data, FRAME.data);
             assert.deepEqual(actualFrame.metadata, FRAME.metadata);
 
@@ -342,9 +334,8 @@ describe('framing stream', function () {
             assert.equal(actualFrame.header.flags,
                          FLAGS.METADATA | FRAME.flags);
             assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
-            assert.deepEqual(actualFrame.setup, _.omit(FRAME, 'data',
-                                                       'metadata', 'flags',
-                                                       'type'));
+            assert.deepEqual(_.omit(actualFrame.setup, 'lease'),
+                _.omit(FRAME, 'data', 'metadata', 'flags', 'type'));
             assert.deepEqual(actualFrame.data, FRAME.data);
             assert.deepEqual(actualFrame.metadata, FRAME.metadata);
 
@@ -376,9 +367,8 @@ describe('framing stream', function () {
             assert.equal(actualFrame.header.flags,
                          FLAGS.METADATA | FRAME.flags);
             assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
-            assert.deepEqual(actualFrame.setup, _.omit(FRAME, 'data',
-                                                       'metadata', 'flags',
-                                                       'type'));
+            assert.deepEqual(_.omit(actualFrame.setup, 'lease'),
+                _.omit(FRAME, 'data', 'metadata', 'flags', 'type'));
             assert.deepEqual(actualFrame.data, FRAME.data);
             assert.deepEqual(actualFrame.metadata, FRAME.metadata);
 

@@ -22,7 +22,6 @@ TEST_FILES	:= $(TEST_DIR)/connection/* $(TEST_DIR)/frame/*\
 	    $(TEST_DIR)/streams/*
 JS_FILES	:= $(shell find $(LIB_DIR) $(BIN_DIR) $(TEST_DIR) -name '*.js')
 TEST_FILES	:= $(shell find $(TEST_DIR) -name '*.test.js')
-PRIMER_SCRIPTS	:= $(TOP)/edge/**/*.groovy
 SHRINKWRAP	:= npm-shrinkwrap.json
 
 CLEAN_FILES	+= node_modules $(SHRINKWRAP)

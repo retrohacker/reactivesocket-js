@@ -120,6 +120,7 @@
         "space-infix-ops": [ 0 ],
         "space-return-throw-case": [ 0 ],
         "space-unary-ops": [ 0 ],
+        "object-curly-spacing": [ 2 ],
 
         "no-array-constructor": [ 2 ],
         "no-nested-ternary": [ 2 ],

@@ -114,9 +114,8 @@ describe('RS WS Integ Tests', function () {
             assert.equal(actualFrame.header.flags,
                          FLAGS.METADATA | seedFrame.flags);
             assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
-            assert.deepEqual(actualFrame.setup, _.omit(seedFrame, 'data',
-                                                       'metadata', 'flags',
-                                                       'type'));
+            assert.deepEqual(_.omit(actualFrame.setup, 'lease'),
+                _.omit(seedFrame, 'data', 'metadata', 'flags', 'type'));
             assert.deepEqual(actualFrame.data, seedFrame.data);
             assert.deepEqual(actualFrame.metadata, seedFrame.metadata);
             isDone++;
@@ -135,9 +134,8 @@ describe('RS WS Integ Tests', function () {
             assert.equal(actualFrame.header.flags,
                          FLAGS.METADATA | seedFrame.flags);
             assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
-            assert.deepEqual(actualFrame.setup, _.omit(seedFrame, 'data',
-                                                       'metadata', 'flags',
-                                                       'type'));
+            assert.deepEqual(_.omit(actualFrame.setup, 'lease'),
+                _.omit(seedFrame, 'data', 'metadata', 'flags', 'type'));
             assert.deepEqual(actualFrame.data, seedFrame.data);
             assert.deepEqual(actualFrame.metadata, seedFrame.metadata);
             isDone++;

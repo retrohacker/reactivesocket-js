@@ -149,14 +149,13 @@ describe('RS TCP Integ Tests', function () {
             var actualFrame = SERVER_P_STREAM.read();
             assert.isObject(actualFrame.header);
             assert.equal(actualFrame.header.streamId, 0,
-                         'setup frame id must be 0');
+                'setup frame id must be 0');
             assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
             assert.equal(actualFrame.header.flags,
-                         FLAGS.METADATA | seedFrame.flags);
+                FLAGS.METADATA | seedFrame.flags);
             assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
-            assert.deepEqual(actualFrame.setup, _.omit(seedFrame, 'data',
-                                                       'metadata', 'flags',
-                                                       'type'));
+            assert.deepEqual(_.omit(actualFrame.setup, 'lease'),
+                _.omit(seedFrame, 'data', 'metadata', 'flags', 'type'));
             assert.deepEqual(actualFrame.data, seedFrame.data);
             assert.deepEqual(actualFrame.metadata, seedFrame.metadata);
             isDone++;
@@ -172,14 +171,13 @@ describe('RS TCP Integ Tests', function () {
             var actualFrame = CLIENT_P_STREAM.read();
             assert.isObject(actualFrame.header);
             assert.equal(actualFrame.header.streamId, 0,
-                         'setup frame id must be 0');
+                'setup frame id must be 0');
             assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
             assert.equal(actualFrame.header.flags,
-                         FLAGS.METADATA | seedFrame.flags);
+                FLAGS.METADATA | seedFrame.flags);
             assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
-            assert.deepEqual(actualFrame.setup, _.omit(seedFrame, 'data',
-                                                       'metadata', 'flags',
-                                                       'type'));
+            assert.deepEqual(_.omit(actualFrame.setup, 'lease'),
+                _.omit(seedFrame, 'data', 'metadata', 'flags', 'type'));
             assert.deepEqual(actualFrame.data, seedFrame.data);
             assert.deepEqual(actualFrame.metadata, seedFrame.metadata);
             isDone++;

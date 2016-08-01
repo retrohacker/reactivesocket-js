@@ -222,6 +222,7 @@ describe('framed-connection-keepalive', function () {
                         framed: true
                     },
                     type: 'client',
+                    keepalive: 50,
                     metadataEncoding: 'utf-8',
                     dataEncoding: 'utf-8'
                 });

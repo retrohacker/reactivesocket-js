@@ -114,6 +114,7 @@ vasync.pipeline({funcs: [
                 framed: true
             },
             type: 'client',
+            lease: true,
             metadataEncoding: 'utf-8',
             dataEncoding: 'utf-8'
         });

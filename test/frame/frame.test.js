@@ -58,8 +58,8 @@ describe('setup', function () {
         assert.equal(actualFrame.header.flags,
                      FLAGS.METADATA | seedFrame.flags);
         assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
-        assert.deepEqual(actualFrame.setup, _.omit(seedFrame, 'data',
-                                                   'metadata', 'flags'));
+        assert.deepEqual(_.omit(actualFrame.setup, 'lease'),
+            _.omit(seedFrame, 'data', 'metadata', 'flags'));
         assert.deepEqual(actualFrame.data, seedFrame.data);
         assert.deepEqual(actualFrame.metadata, seedFrame.metadata);
     });
@@ -80,8 +80,8 @@ describe('setup', function () {
         assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
         assert.equal(actualFrame.header.flags, seedFrame.flags);
         assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
-        assert.deepEqual(actualFrame.setup, _.omit(seedFrame, 'data',
-                                                   'metadata', 'flags'));
+        assert.deepEqual(_.omit(actualFrame.setup, 'lease'),
+            _.omit(seedFrame, 'data', 'metadata', 'flags'));
         assert.deepEqual(actualFrame.data, seedFrame.data);
     });
     it('encode/decode with lease, strict, md', function () {
@@ -102,8 +102,8 @@ describe('setup', function () {
         assert.equal(actualFrame.header.flags,
                      FLAGS.METADATA | seedFrame.flags);
         assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
-        assert.deepEqual(actualFrame.setup, _.omit(seedFrame, 'data',
-                                                   'metadata', 'flags'));
+        assert.deepEqual(_.omit(actualFrame.setup, 'lease'),
+            _.omit(seedFrame, 'data', 'metadata', 'flags'));
         assert.deepEqual(actualFrame.metadata, seedFrame.metadata);
     });
     it('encode/decode with lease, strict', function () {
@@ -122,7 +122,8 @@ describe('setup', function () {
         assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
         assert.equal(actualFrame.header.flags, seedFrame.flags);
         assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
-        assert.deepEqual(actualFrame.setup, _.omit(seedFrame, 'flags'));
+        assert.deepEqual(_.omit(actualFrame.setup, 'lease'),
+            _.omit(seedFrame, 'flags'));
     });
 });
 

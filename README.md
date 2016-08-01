@@ -210,6 +210,35 @@ websocket.on('open', function() {
 });
 ```
 
+## Lease Semantic
+
+ReactiveSocket client allows you to specify if you want to honor the lease
+semantic.
+
+```javascript
+reactiveSocket.createConnection({
+    ...,
+    lease: true,
+    ...
+});
+```
+
+If you don't, it means that the `ReactiveSocket` is ready as
+soon as the connection is established, and you can start sending messages.
+But if you do, it means the client has to wait for a `LEASE` frame from the
+server before sending messages.
+
+Note that nothing is preventing the client to send requests to the server before
+receiving the `LEASE`, the `LEASE` reception only update the return value of
+the `availability` method (number between 0 and 1.0).
+
+The `availability` method gives precious information to a potential higher
+level library (e.g. load-balancing library) about the capability of the
+underlying connection.
+
+More details about the lease semantic are available in the
+[protocol Spec](https://github.com/ReactiveSocket/reactivesocket/blob/master/Protocol.md#connection-establishment).
+
 ## CLI
 This library comes with a CLI. You can use it by installing this module.
 ```bash
