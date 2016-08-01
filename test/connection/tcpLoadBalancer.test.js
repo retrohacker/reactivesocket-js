@@ -92,7 +92,7 @@ var EXPECTED_APPLICATION_ERROR = {
     data: 'Through wars of worlds - invaded by Mars'
 };
 
-describe('TcpConnectionPool', function () {
+describe('TcpLoadBalancer', function () {
 
     var LOG = bunyan.createLogger({
         name: 'tcp connection pool tests',
@@ -187,7 +187,7 @@ describe('TcpConnectionPool', function () {
     });
 
     it('should create a connection pool', function (done) {
-        CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
+        CONNECTION_POOL = reactiveSocket.createTcpLoadBalancer({
             size: POOL_SIZE,
             log: LOG,
             hosts: SERVER_CFG
@@ -206,7 +206,7 @@ describe('TcpConnectionPool', function () {
     });
 
     it('should tolerate connection failure', function (done) {
-        CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
+        CONNECTION_POOL = reactiveSocket.createTcpLoadBalancer({
             size: POOL_SIZE,
             log: LOG,
             hosts: SERVER_CFG
@@ -221,7 +221,7 @@ describe('TcpConnectionPool', function () {
     });
 
     it('should tolerate multiple connection failures', function (done) {
-        CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
+        CONNECTION_POOL = reactiveSocket.createTcpLoadBalancer({
             size: POOL_SIZE,
             log: LOG,
             hosts: SERVER_CFG
@@ -243,7 +243,7 @@ describe('TcpConnectionPool', function () {
     });
 
     it('should update hosts with new hosts', function (done) {
-        CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
+        CONNECTION_POOL = reactiveSocket.createTcpLoadBalancer({
             size: POOL_SIZE,
             log: LOG,
             hosts: SERVER_CFG
@@ -293,7 +293,7 @@ describe('TcpConnectionPool', function () {
     });
 
     it('should update hosts with same hosts', function (done) {
-        CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
+        CONNECTION_POOL = reactiveSocket.createTcpLoadBalancer({
             size: POOL_SIZE,
             log: LOG,
             hosts: SERVER_CFG
@@ -349,7 +349,7 @@ describe('TcpConnectionPool', function () {
        function (done) {
 
            var poolSize = _.keys(SERVER_CFG).length + 5;
-           CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
+           CONNECTION_POOL = reactiveSocket.createTcpLoadBalancer({
             size: poolSize,
             log: LOG,
             hosts: SERVER_CFG
@@ -368,7 +368,7 @@ describe('TcpConnectionPool', function () {
 
     it('should get a connection and req/res', function (done) {
 
-        CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
+        CONNECTION_POOL = reactiveSocket.createTcpLoadBalancer({
             size: POOL_SIZE,
             log: LOG,
             hosts: SERVER_CFG
@@ -386,7 +386,7 @@ describe('TcpConnectionPool', function () {
 
     it('should get a connection and req/err', function (done) {
 
-        CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
+        CONNECTION_POOL = reactiveSocket.createTcpLoadBalancer({
             size: POOL_SIZE,
             log: LOG,
             hosts: SERVER_CFG
@@ -407,7 +407,7 @@ describe('TcpConnectionPool', function () {
 
     it('should get a connection, send req/res, bad connection before res',
        function (done) {
-        CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
+        CONNECTION_POOL = reactiveSocket.createTcpLoadBalancer({
             size: POOL_SIZE,
             log: LOG,
             hosts: SERVER_CFG
@@ -431,7 +431,7 @@ describe('TcpConnectionPool', function () {
     it('should get a connection, send req/res, bad connection after res',
        function (done) {
 
-           CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
+           CONNECTION_POOL = reactiveSocket.createTcpLoadBalancer({
             size: POOL_SIZE,
             log: LOG,
             hosts: SERVER_CFG
@@ -455,7 +455,7 @@ describe('TcpConnectionPool', function () {
 
     it('should return a null connection when there are no connected hosts',
        function (done) {
-        CONNECTION_POOL = reactiveSocket.createTcpConnectionPool({
+        CONNECTION_POOL = reactiveSocket.createTcpLoadBalancer({
            size: POOL_SIZE,
            log: LOG,
            hosts: [] // empty array so no hosts to connect to

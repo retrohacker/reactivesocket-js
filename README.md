@@ -27,9 +27,9 @@ and WebSockets via the [yws-stream](https://github.com/yunong/ws-stream)
 module. You are of course, free to inject other transports.
 
 ## Connection Quick Start
-This library supports 3 classes of clients. A fully managed connection pool,
+This library supports 3 classes of clients. A fully managed load balancer,
 which automatically manages a pool of connections and takes care of
-automatically reconnecting and picking a connection from the pool. A fully
+automatically reconnecting and load-balancing connections from the pool. A fully
 managed single TCP connection, which can be configured to automatically
 reconnect if the TCP connection disconnects. Lastly a "raw" ReactiveSocket
 connection, which doesn't include any retry or transport logic. You provide a
@@ -37,14 +37,14 @@ transport stream to plug in to the connection. This is the most flexible
 client, as you can use it with any transport mechanism. Examples for TCP and
 WebSockets are provided.
 
-### TCP Connection Pool
+### TCP Client Side Load Balancer
 ```javascript
 var bunyan = require('bunyan');
 var reactiveSocket = require('reactivesocket');
 
-var connectionPool = reactiveSocket.createTcpConnectionPool({
+var connectionPool = reactiveSocket.createTcpLoadBalancer({
     size: 5, // size of the pool, defaults to 5
-    log: bunyan.createLogger({name: 'rsConnectionPool'}),
+    log: bunyan.createLogger({name: 'rsLoadBalancer'}),
     hosts: [{ // array of host:port objects to connect to
         host: 'localhost',
         port: 1337
@@ -96,7 +96,7 @@ var bunyan = require('bunyan');
 var reactiveSocket = require('reactivesocket');
 
 var tcpConnection = reactiveSocket.createTcpConnection({
-    log: bunyan.createLogger({name: 'rsConnectionPool'}),
+    log: bunyan.createLogger({name: 'rsConnection'}),
     connOpts: { // host to connect to
         host: 'localhost',
         port: 1337
