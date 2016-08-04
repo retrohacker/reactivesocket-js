@@ -2,7 +2,6 @@
 
 var _ = require('lodash');
 var assert = require('chai').assert;
-var bunyan = require('bunyan');
 
 var getRandomInt = require('../common/getRandomInt');
 
@@ -12,13 +11,9 @@ var ParseStream = require('../../lib/streams/parseStream.js');
 var CONSTANTS = require('../../lib/protocol/constants');
 var FLAGS = CONSTANTS.FLAGS;
 var TYPES = CONSTANTS.TYPES;
+var LOG = require('../common/log');
 
 describe('serialize/parse streams', function () {
-    var LOG = bunyan.createLogger({
-        name: 'rs client stream tests',
-        level: process.env.LOG_LEVEL || bunyan.INFO,
-        serializers: bunyan.stdSerializers
-    });
     var S_STREAM = new SerializeStream({
         log: LOG,
         metadataEncoding: 'utf-8',

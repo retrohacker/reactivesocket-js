@@ -2,7 +2,6 @@
 
 var _ = require('lodash');
 var assert = require('chai').assert;
-var bunyan = require('bunyan');
 
 var getRandomInt = require('../common/getRandomInt');
 
@@ -14,18 +13,9 @@ var CONSTANTS = require('../../lib/protocol/constants');
 var FLAGS = CONSTANTS.FLAGS;
 var TYPES = CONSTANTS.TYPES;
 
-describe('framing stream', function () {
-    var LOG = bunyan.createLogger({
-        name: 'framing stream test',
-        level: process.env.LOG_LEVEL || bunyan.INFO,
-        serializers: bunyan.stdSerializers
-    });
-    LOG.addSerializers({
-        buffer: function (buf) {
-            return buf.toString();
-        }
-    });
+var LOG = require('../common/log');
 
+describe('framing stream', function () {
     var FRAME = {
         type: TYPES.SETUP,
         flags: FLAGS.LEASE | FLAGS.STRICT,

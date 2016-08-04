@@ -5,11 +5,11 @@ var net = require('net');
 
 var _ = require('lodash');
 var assert = require('chai').assert;
-var bunyan = require('bunyan');
 
 var reactiveSocket = require('../../lib');
 
 var ERROR_CODES = reactiveSocket.ERROR_CODES;
+var LOG = require('../common/log');
 
 var PORT = process.env.PORT || 1337;
 var HOST = process.env.HOST || 'localhost';
@@ -37,19 +37,6 @@ var EXPECTED_APPLICATION_ERROR = {
 };
 
 describe('frame-connection-setup', function () {
-
-    var LOG = bunyan.createLogger({
-        name: 'framed connection setup tests',
-        level: process.env.LOG_LEVEL || bunyan.INFO,
-        serializers: bunyan.stdSerializers
-    });
-
-    LOG.addSerializers({
-        buffer: function (buf) {
-            return buf.toString();
-        }
-    });
-
     var TCP_SERVER;
     var TCP_CLIENT_STREAMS = [];
 
@@ -164,17 +151,6 @@ describe('frame-connection-setup', function () {
 });
 
 describe('framed-connection-keepalive', function () {
-    var LOG = bunyan.createLogger({
-        name: 'framed connection keepalive tests',
-        level: process.env.LOG_LEVEL || bunyan.INFO,
-        serializers: bunyan.stdSerializers
-    });
-    LOG.addSerializers({
-        buffer: function (buf) {
-            return buf.toString();
-        }
-    });
-
     var TCP_SERVER;
     var TCP_SERVER_STREAM;
     var TCP_CLIENT_STREAM;
@@ -280,17 +256,6 @@ describe('framed-connection-keepalive', function () {
 });
 
 describe('framed-connection', function () {
-    var LOG = bunyan.createLogger({
-        name: 'framed connection tests',
-        level: process.env.LOG_LEVEL || bunyan.INFO,
-        serializers: bunyan.stdSerializers
-    });
-    LOG.addSerializers({
-        buffer: function (buf) {
-            return buf.toString();
-        }
-    });
-
     var TCP_SERVER;
     var TCP_SERVER_STREAM;
     var TCP_CLIENT_STREAM;
@@ -458,17 +423,6 @@ describe('framed-connection', function () {
 });
 
 describe('framed-connection connection errors', function () {
-    var LOG = bunyan.createLogger({
-        name: 'framed connection tests',
-        level: process.env.LOG_LEVEL || bunyan.INFO,
-        serializers: bunyan.stdSerializers
-    });
-    LOG.addSerializers({
-        buffer: function (buf) {
-            return buf.toString();
-        }
-    });
-
     var TCP_SERVER;
     var TCP_CLIENT_STREAM;
 

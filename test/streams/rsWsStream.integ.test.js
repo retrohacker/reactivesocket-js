@@ -2,7 +2,6 @@
 
 var _ = require('lodash');
 var assert = require('chai').assert;
-var bunyan = require('bunyan');
 
 var Ws = require('ws');
 var WSStream = require('yws-stream');
@@ -20,19 +19,10 @@ var PORT = process.env.PORT || 1337;
 var METADATA_ENCODING = 'binary';
 var DATA_ENCODING = 'ascii';
 
+var LOG = require('../common/log');
+
 
 describe('RS WS Integ Tests', function () {
-    var LOG = bunyan.createLogger({
-        name: 'rs client stream tests',
-        level: process.env.LOG_LEVEL || bunyan.INFO,
-        serializers: bunyan.stdSerializers
-    });
-    LOG.addSerializers({
-        buffer: function (buf) {
-            return buf.toString();
-        }
-    });
-
     var WS_SERVER;
     var WS_CLIENT;
     var WS_SERVER_STREAM;

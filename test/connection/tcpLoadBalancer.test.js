@@ -4,11 +4,11 @@ var net = require('net');
 
 var _ = require('lodash');
 var assert = require('chai').assert;
-var bunyan = require('bunyan');
 
 var reactiveSocket = require('../../lib');
 
 var ERROR_CODES = reactiveSocket.ERROR_CODES;
+var LOG = require('../common/log');
 
 var PORT = process.env.PORT || 1337;
 var HOST = process.env.HOST || 'localhost';
@@ -93,20 +93,6 @@ var EXPECTED_APPLICATION_ERROR = {
 };
 
 describe('TcpLoadBalancer', function () {
-
-    var LOG = bunyan.createLogger({
-        name: 'tcp connection pool tests',
-        level: process.env.LOG_LEVEL || bunyan.INFO,
-        serializers: bunyan.stdSerializers,
-        src: true
-    });
-
-    LOG.addSerializers({
-        buffer: function (buf) {
-            return buf.toString();
-        }
-    });
-
     var SERVERS = {};
     var SERVER_CONNECTIONS = [];
     var CONNECTION_POOL;
@@ -198,9 +184,8 @@ describe('TcpLoadBalancer', function () {
             isReady = true;
         });
         CONNECTION_POOL.on('connected', function () {
-            assert.equal(POOL_SIZE,
-                         _.keys(CONNECTION_POOL._connections.connected).length);
             assert.ok(isReady, 'ready event did not fire');
+            checkPool(CONNECTION_POOL._connections);
             return done();
         });
     });
@@ -214,6 +199,7 @@ describe('TcpLoadBalancer', function () {
 
         CONNECTION_POOL.on('connected', function () {
             CONNECTION_POOL.on('connect', function () {
+                checkPool(CONNECTION_POOL._connections);
                 done();
             });
             CONNECTION_POOL.getConnection()._transportStream.end();
@@ -233,6 +219,7 @@ describe('TcpLoadBalancer', function () {
                 reconnectCount++;
 
                 if (reconnectCount === POOL_SIZE) {
+                    checkPool(CONNECTION_POOL._connections);
                     done();
                 }
             });
@@ -286,6 +273,7 @@ describe('TcpLoadBalancer', function () {
                         assert.ok(_.findIndex(updatedHostKeys, k),
                                   'host ' + k + ' does not exist in host list');
                     });
+                    checkPool(CONNECTION_POOL._connections);
                     done();
                 }
             });
@@ -340,22 +328,22 @@ describe('TcpLoadBalancer', function () {
                     assert.ok(_.findIndex(updatedHostKeys, k),
                               'host ' + k + ' does not exist in host list');
                 });
+                checkPool(CONNECTION_POOL._connections);
                 done();
-            }, 1000);
+            }, 100);
         });
     });
 
     it('should gracefully handle pool size larger than actual available hosts',
        function (done) {
-
-           var poolSize = _.keys(SERVER_CFG).length + 5;
-           CONNECTION_POOL = reactiveSocket.createTcpLoadBalancer({
+        var poolSize = _.keys(SERVER_CFG).length + 5;
+        CONNECTION_POOL = reactiveSocket.createTcpLoadBalancer({
             size: poolSize,
             log: LOG,
             hosts: SERVER_CFG
         });
 
-           CONNECTION_POOL.on('connected', function () {
+        CONNECTION_POOL.on('connected', function () {
             var connections = CONNECTION_POOL._connections;
             var connected = connections.connected;
             assert.equal(SERVER_CFG.length, _.keys(connected).length,
@@ -364,7 +352,47 @@ describe('TcpLoadBalancer', function () {
             assert.equal(0, _.keys(free).length, 'free list should be empty');
             done();
         });
-       });
+    });
+
+    it('should resize pool to 0 and back', function (done) {
+        CONNECTION_POOL = reactiveSocket.createTcpLoadBalancer({
+            size: POOL_SIZE,
+            log: LOG,
+            hosts: []
+        });
+
+        CONNECTION_POOL.on('connected', function () {
+            var connections = CONNECTION_POOL._connections;
+            var connected = connections.connected;
+            assert.equal(0, _.keys(connected).length, 'pool size should be 0');
+            var free = connections.free;
+            assert.equal(0, _.keys(free).length, 'free list should be empty');
+
+            // update with > POOL_SIZE hosts
+            CONNECTION_POOL.updateHosts(SERVER_CFG);
+            setTimeout(function () {
+                checkPool(connections);
+                // update with < POOL_SIZE hosts
+                CONNECTION_POOL.updateHosts(_.sampleSize(SERVER_CFG,
+                                                         POOL_SIZE - 1));
+                setTimeout(function () {
+                    checkPool(connections, POOL_SIZE - 1);
+                    // update with 0 hosts
+                    CONNECTION_POOL.updateHosts([]);
+                    setTimeout(function () {
+                        checkPool(connections, 0);
+                        // update with > POOL_SIZE hosts
+                        CONNECTION_POOL.updateHosts(SERVER_CFG);
+                        setTimeout(function () {
+                            checkPool(connections);
+                            done();
+                        }, 100);
+                    }, 100);
+                    // update with 0 hosts
+                }, 100);
+            }, 100);
+        });
+    });
 
     it('should get a connection and req/res', function (done) {
 
@@ -440,17 +468,17 @@ describe('TcpLoadBalancer', function () {
            var connection;
 
            CONNECTION_POOL.on('connected', function () {
-            connection = CONNECTION_POOL.getConnection();
-            var response = connection.request(_.cloneDeep(EXPECTED_REQ));
-            response.on('response', function (res) {
-                assert.deepEqual(res.getResponse(), EXPECTED_RES);
-                connection._transportStream.end();
-                setImmediate(done);
-            });
-            response.on('error', function (err) {
+               connection = CONNECTION_POOL.getConnection();
+               var response = connection.request(_.cloneDeep(EXPECTED_REQ));
+               response.on('response', function (res) {
+                   assert.deepEqual(res.getResponse(), EXPECTED_RES);
+                   connection._transportStream.end();
+                   setImmediate(done);
+               });
+               response.on('error', function (err) {
                 throw new Error('should not get err');
             });
-        });
+           });
        });
 
     it('should return a null connection when there are no connected hosts',
@@ -465,3 +493,30 @@ describe('TcpLoadBalancer', function () {
         done();
     });
 });
+
+
+/// Privates
+
+
+function checkPool(connections, poolSize) {
+    if (typeof (poolSize) !== 'number') {
+        poolSize = POOL_SIZE;
+    }
+    var connected = _.keys(connections.connected);
+    var connecting = _.keys(connections.connecting);
+    var free = _.keys(connections.free);
+    LOG.debug('pool size', poolSize);
+    LOG.debug('free', free.sort());
+    LOG.debug('connected', connected.sort());
+    LOG.debug('connecting', connecting);
+    var connFreeIntersection = _.intersection(connected, connecting, free)
+        .sort();
+    LOG.debug('connFreeIntersection', connFreeIntersection);
+
+    assert.equal(poolSize, connected.length,
+                 'should have the right amount of connected connections');
+    assert.equal(connecting.length, 0,
+                 'should not have conns in connecting state');
+    assert.equal(connFreeIntersection.length, 0, 'should not have conns in' +
+                 'free, connected, and connecting state');
+}

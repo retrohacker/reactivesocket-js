@@ -2,7 +2,6 @@
 
 var _ = require('lodash');
 var assert = require('chai').assert;
-var bunyan = require('bunyan');
 
 var Ws = require('ws');
 var WSStream = require('yws-stream');
@@ -10,6 +9,7 @@ var WSStream = require('yws-stream');
 var reactiveSocket = require('../../lib');
 
 var ERROR_CODES = reactiveSocket.ERROR_CODES;
+var LOG = require('../common/log');
 
 var PORT = process.env.PORT || 1337;
 
@@ -30,13 +30,6 @@ var EXPECTED_APPLICATION_ERROR = {
 };
 
 describe('unframed-connection-setup', function () {
-
-    var LOG = bunyan.createLogger({
-        name: 'framed connection setup tests',
-        level: process.env.LOG_LEVEL || bunyan.INFO,
-        serializers: bunyan.stdSerializers
-    });
-
     var WS_SERVER;
     var WS_CLIENT_CONS = [];
 
@@ -148,11 +141,6 @@ describe('unframed-connection-setup', function () {
 });
 
 describe('connection', function () {
-    var LOG = bunyan.createLogger({
-        name: 'connection tests',
-        level: process.env.LOG_LEVEL || bunyan.INFO,
-        serializers: bunyan.stdSerializers
-    });
     var SERVER_CON;
     var CLIENT_CON;
     var WS_SERVER;
