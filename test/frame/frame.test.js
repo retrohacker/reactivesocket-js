@@ -131,7 +131,7 @@ describe('error', function () {
     it('encode/decode', function () {
         var seedFrame = {
             streamId: getRandomInt(0, Math.pow(2, 32)),
-            errorCode: getRandomInt(0, Math.pow(2, 16)),
+            errorCode: getRandomInt(0, Math.pow(2, 32)),
             data: 'Running over the same old ground',
             metadata: 'What have we found',
             metadataEncoding: METADATA_ENCODING,
@@ -185,6 +185,24 @@ describe('keepalive', function () {
         assert.equal(actualFrame.header.type, CONSTANTS.TYPES.KEEPALIVE);
         assert.equal(actualFrame.response, seedFrame.response);
         assert.equal(actualFrame.data.toString(), seedFrame.data);
+    });
+});
+
+describe('cancel', function () {
+    it('encode/decode', function () {
+        var seedFrame = {
+            streamId: getRandomInt(0, Math.pow(2, 32)),
+            metadata: "I don't want it anymore!",
+            metadataEncoding: DATA_ENCODING
+        };
+
+        var cancelFrame = frame.getCancelFrame(seedFrame);
+        var actualFrame = frame.parseFrame(cancelFrame);
+        assert.isObject(actualFrame.header);
+        assert.equal(actualFrame.header.streamId, seedFrame.streamId);
+        assert.equal(actualFrame.header.type, CONSTANTS.TYPES.CANCEL);
+        assert.equal(actualFrame.response, seedFrame.response);
+        assert.equal(actualFrame.metadata.toString(), seedFrame.metadata);
     });
 });
 

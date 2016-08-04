@@ -493,6 +493,9 @@ describe('framed-connection connection errors', function () {
                     done();
                 }
             });
+            SERVER_CON.on('connection-error', function () {
+                // discard client diconnection event
+            });
         });
 
         TCP_SERVER.listen({
