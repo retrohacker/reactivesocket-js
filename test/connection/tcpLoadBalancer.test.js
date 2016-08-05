@@ -342,14 +342,18 @@ describe('TcpLoadBalancer', function () {
             log: LOG,
             hosts: SERVER_CFG
         });
-
         CONNECTION_POOL.on('connected', function () {
+            assert.fail(null, null, 'should not get connected event');
+        });
+
+        CONNECTION_POOL.on('ready', function () {
             var connections = CONNECTION_POOL._connections;
             var connected = connections.connected;
             assert.equal(SERVER_CFG.length, _.keys(connected).length,
                          'pool size should be size of servers');
             var free = connections.free;
             assert.equal(0, _.keys(free).length, 'free list should be empty');
+            checkPool(CONNECTION_POOL._connections, SERVER_CFG.length);
             done();
         });
     });
@@ -361,16 +365,29 @@ describe('TcpLoadBalancer', function () {
             hosts: []
         });
 
-        CONNECTION_POOL.on('connected', function () {
+        // neither 'ready' nor 'connected' should fire when there are initially
+        // no connections
+        function onConnected() {
+            assert.fail(null, null, 'should not get connected event');
+        }
+        function onReady() {
+            assert.fail(null, null, 'should not get ready event');
+        }
+
+        CONNECTION_POOL.once('connected', onConnected);
+        CONNECTION_POOL.once('ready', onReady);
+        setTimeout(function () {
             var connections = CONNECTION_POOL._connections;
             var connected = connections.connected;
             assert.equal(0, _.keys(connected).length, 'pool size should be 0');
             var free = connections.free;
             assert.equal(0, _.keys(free).length, 'free list should be empty');
-
+            checkPool(connections, 0);
+            CONNECTION_POOL.removeListener('connected', onConnected);
+            CONNECTION_POOL.removeListener('ready', onReady);
             // update with > POOL_SIZE hosts
             CONNECTION_POOL.updateHosts(SERVER_CFG);
-            setTimeout(function () {
+            CONNECTION_POOL.on('connected', function () {
                 checkPool(connections);
                 // update with < POOL_SIZE hosts
                 CONNECTION_POOL.updateHosts(_.sampleSize(SERVER_CFG,
@@ -390,8 +407,8 @@ describe('TcpLoadBalancer', function () {
                     }, 100);
                     // update with 0 hosts
                 }, 100);
-            }, 100);
-        });
+            });
+        }, 100);
     });
 
     it('should get a connection and req/res', function (done) {
