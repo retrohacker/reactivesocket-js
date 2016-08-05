@@ -102,18 +102,14 @@ describe('Timeout tests', function () {
             });
         });
 
-        var timerCount0 = Object.keys(CLIENT_CON._requestTimers).length;
         var response = CLIENT_CON.request({data: 'request-data'});
-        var timerCount1 = Object.keys(CLIENT_CON._requestTimers).length;
-        assert.equal(timerCount1 - timerCount0, 1);
 
         response.once('response', function (res) {
             assert(false,
                 "I shouldn't receive that, it's too late, I cancelled it!");
         });
         response.once('timeout', function () {
-            var timerCount2 = Object.keys(CLIENT_CON._requestTimers).length;
-            assert.equal(timerCount2 - timerCount0, 0);
+            assert(response._expired);
             semaphore.latch();
         });
     });
