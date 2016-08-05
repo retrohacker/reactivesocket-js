@@ -5,7 +5,6 @@ var net = require('net');
 
 var _ = require('lodash');
 var assert = require('chai').assert;
-var bunyan = require('bunyan');
 var sinon = require('sinon');
 
 var getRandomInt = require('../common/getRandomInt');
@@ -23,6 +22,8 @@ var HOST = process.env.HOST || 'localhost';
 var METADATA_ENCODING = 'utf8';
 var DATA_ENCODING = 'utf8';
 
+var LOG = require('../common/log');
+
 // we need to send a large enough frame to ensure we exceed the default TCP
 // loopback MTU of 16384 bytes. This is to test that framing actually works.
 // Hence we read in some select works of the Bard.
@@ -30,17 +31,6 @@ var HAMLET = fs.readFileSync('./test/etc/hamlet.txt', 'utf8');
 var JULIUS_CAESAR = fs.readFileSync('./test/etc/julius_caesar.txt', 'utf8');
 
 describe('RS TCP Integ Tests', function () {
-    var LOG = bunyan.createLogger({
-        name: 'rs client stream tests',
-        level: process.env.LOG_LEVEL || bunyan.INFO,
-        serializers: bunyan.stdSerializers
-    });
-    LOG.addSerializers({
-        buffer: function (buf) {
-            return buf.toString();
-        }
-    });
-
     var TCP_SERVER_STREAM;
     var TCP_SERVER;
     var SERVER_F_STREAM = new FramingStream({

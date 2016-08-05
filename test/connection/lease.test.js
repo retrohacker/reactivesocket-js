@@ -2,27 +2,15 @@
 
 var net = require('net');
 var assert = require('chai').assert;
-var bunyan = require('bunyan');
 
 var reactiveSocket = require('../../lib');
+
+var LOG = require('../common/log');
 
 var PORT = process.env.PORT || 1337;
 var HOST = process.env.HOST || 'localhost';
 
 describe('Lease test', function () {
-
-    var LOG = bunyan.createLogger({
-        name: 'lease tests',
-        level: process.env.LOG_LEVEL || bunyan.INFO,
-        serializers: bunyan.stdSerializers
-    });
-
-    LOG.addSerializers({
-        buffer: function (buf) {
-            return buf.toString();
-        }
-    });
-
     var TCP_SERVER;
     var TCP_CLIENT;
     var TCP_CLIENT_STREAM;
