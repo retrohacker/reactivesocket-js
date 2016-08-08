@@ -7,6 +7,7 @@ var _ = require('lodash');
 var assert = require('chai').assert;
 
 var reactiveSocket = require('../../lib');
+var getSemaphore = require('../common/getSemaphore');
 
 var ERROR_CODES = reactiveSocket.ERROR_CODES;
 var LOG = require('../common/log');
@@ -234,21 +235,14 @@ describe('TcpConnection functional tests', function () {
     });
 
     after(function (done) {
-        var count = 0;
-        CLIENT_CON.once('close', function () {
-            count++;
+        var semaphore = getSemaphore(2, done);
 
-            if (count === 2) {
-                done();
-            }
+        CLIENT_CON.once('close', function () {
+            semaphore.latch();
         });
         TCP_SERVER_STREAM.on('end', function () {
             TCP_SERVER.close(function () {
-                count++;
-
-                if (count === 2) {
-                    done();
-                }
+                semaphore.latch();
             });
         });
         TCP_SERVER_STREAM.end();

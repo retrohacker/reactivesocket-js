@@ -7,6 +7,7 @@ var Ws = require('ws');
 var WSStream = require('yws-stream');
 
 var reactiveSocket = require('../../lib');
+var getSemaphore = require('../common/getSemaphore');
 
 var ERROR_CODES = reactiveSocket.ERROR_CODES;
 var LOG = require('../common/log');
@@ -149,7 +150,8 @@ describe('connection', function () {
     var WS_CLIENT_STREAM;
 
     before(function (done) {
-        var doneCount = 0;
+        var semaphore = getSemaphore(2, done);
+
         WS_SERVER = new Ws.Server({port: PORT});
         WS_SERVER.on('listening', function () {
             WS_SERVER.once('connection', function (socket) {
@@ -167,11 +169,7 @@ describe('connection', function () {
                 });
 
                 SERVER_CON.on('ready', function () {
-                    doneCount++;
-
-                    if (doneCount === 2) {
-                        done();
-                    }
+                    semaphore.latch();
                 });
             });
 
@@ -192,31 +190,19 @@ describe('connection', function () {
                 });
 
                 CLIENT_CON.on('ready', function () {
-                    doneCount++;
-
-                    if (doneCount === 2) {
-                        done();
-                    }
+                    semaphore.latch();
                 });
             });
         });
     });
 
     after(function (done) {
-        var doneCount = 0;
+        var semaphore = getSemaphore(2, done);
         SERVER_CON.on('close', function () {
-            doneCount++;
-
-            if (doneCount === 2) {
-                done();
-            }
+            semaphore.latch();
         });
         CLIENT_CON.on('close', function () {
-            doneCount++;
-
-            if (doneCount === 2) {
-                done();
-            }
+            semaphore.latch();
         });
         WS_CLIENT.close();
         WS_SERVER.close();

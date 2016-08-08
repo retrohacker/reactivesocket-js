@@ -335,28 +335,28 @@ describe('TcpLoadBalancer', function () {
     });
 
     it('should gracefully handle pool size larger than actual available hosts',
-       function (done) {
-        var poolSize = _.keys(SERVER_CFG).length + 5;
-        CONNECTION_POOL = reactiveSocket.createTcpLoadBalancer({
-            size: poolSize,
-            log: LOG,
-            hosts: SERVER_CFG
-        });
-        CONNECTION_POOL.on('connected', function () {
-            assert.fail(null, null, 'should not get connected event');
-        });
+        function (done) {
+            var poolSize = _.keys(SERVER_CFG).length + 5;
+            CONNECTION_POOL = reactiveSocket.createTcpLoadBalancer({
+                size: poolSize,
+                log: LOG,
+                hosts: SERVER_CFG
+            });
+            CONNECTION_POOL.on('connected', function () {
+                assert.fail(null, null, 'should not get connected event');
+            });
 
-        CONNECTION_POOL.on('ready', function () {
-            var connections = CONNECTION_POOL._connections;
-            var connected = connections.connected;
-            assert.equal(SERVER_CFG.length, _.keys(connected).length,
-                         'pool size should be size of servers');
-            var free = connections.free;
-            assert.equal(0, _.keys(free).length, 'free list should be empty');
-            checkPool(CONNECTION_POOL._connections, SERVER_CFG.length);
-            done();
+            CONNECTION_POOL.on('ready', function () {
+                var connections = CONNECTION_POOL._connections;
+                var connected = _.keys(connections.connected).length;
+                var connecting = _.keys(connections.connecting).length;
+                var free = _.keys(connections.free).length;
+                assert.equal(SERVER_CFG.length, connected + connecting,
+                    'pool size should be size of servers');
+                assert.equal(0, free, 'free list should be empty');
+                done();
+            });
         });
-    });
 
     it('should resize pool to 0 and back', function (done) {
         CONNECTION_POOL = reactiveSocket.createTcpLoadBalancer({

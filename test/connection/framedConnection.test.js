@@ -7,6 +7,7 @@ var _ = require('lodash');
 var assert = require('chai').assert;
 
 var reactiveSocket = require('../../lib');
+var getSemaphore = require('../common/getSemaphore');
 
 var ERROR_CODES = reactiveSocket.ERROR_CODES;
 var LOG = require('../common/log');
@@ -159,7 +160,8 @@ describe('framed-connection-keepalive', function () {
     var CLIENT_CON;
 
     beforeEach(function (done) {
-        var count = 0;
+        var semaphore = getSemaphore(2, done);
+
         TCP_SERVER = net.createServer(function (con) {
             TCP_SERVER_STREAM = con;
             SERVER_CON = reactiveSocket.createConnection({
@@ -171,11 +173,7 @@ describe('framed-connection-keepalive', function () {
                 type: 'server'
             });
             SERVER_CON.on('ready', function () {
-                count++;
-
-                if (count === 2) {
-                    done();
-                }
+                semaphore.latch();
             });
         });
 
@@ -204,11 +202,7 @@ describe('framed-connection-keepalive', function () {
                 });
 
                 CLIENT_CON.on('ready', function () {
-                    count++;
-
-                    if (count === 2) {
-                        done();
-                    }
+                    semaphore.latch();
                 });
             });
         });
