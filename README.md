@@ -210,6 +210,38 @@ websocket.on('open', function() {
 });
 ```
 
+## Timeout
+
+As a convenience for the user, the ReactiveSocket client provide 'timeout'
+events.
+Below is an example of how to listen to those events.
+
+```javascript
+var socket = ...;
+var client = reactiveSocket.createConnection({
+    log: LOG,
+    transport: {
+        stream: socket,
+        framed: true
+    },
+    requestTimeoutMs: 100,
+    type: 'client',
+    metadataEncoding: 'utf-8',
+    dataEncoding: 'utf-8'
+});
+
+client.on('ready', function () {
+    var responseStream = CLIENT_CON.request({data: 'request-data'});
+
+    responseStream.once('response', function (res) {
+        console.log('Yeah, a response ' + res.getResponse());
+    });
+    responseStream.once('timeout', function () {
+        console.log('Too late ');
+    });
+});
+```
+
 ## Lease Semantic
 
 ReactiveSocket client allows you to specify if you want to honor the lease

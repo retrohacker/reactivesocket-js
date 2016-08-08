@@ -397,9 +397,6 @@ describe('framed-connection', function () {
             assert.deepEqual(stream.getRequest(), EXPECTED_REQ);
             stream.error(_.cloneDeep(EXPECTED_APPLICATION_ERROR));
             setImmediate(function () {
-                // should only have the setup stream cached in the connection
-                assert.equal(Object.keys(SERVER_CON._streams.streams).length,
-                             1);
                 assert.isOk(SERVER_CON._streams.streams[0]);
             });
         });
@@ -446,6 +443,9 @@ describe('framed-connection connection errors', function () {
                 if (count === 2) {
                     done();
                 }
+            });
+            SERVER_CON.on('connection-error', function () {
+                // discard client diconnection event
             });
         });
 

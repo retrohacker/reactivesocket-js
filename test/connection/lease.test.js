@@ -71,4 +71,38 @@ describe('Lease test', function () {
             });
         });
     });
+
+    it('close() stops running timers (keepalive, lease, ...)', function (done) {
+        TCP_CLIENT_STREAM = net.connect(PORT, HOST, function (e) {
+            if (e) {
+                throw e;
+            }
+
+            TCP_CLIENT = reactiveSocket.createConnection({
+                log: LOG,
+                transport: {
+                    stream: TCP_CLIENT_STREAM,
+                    framed: true
+                },
+                lease: true,
+                keepalive: 50,
+                type: 'client',
+                metadataEncoding: 'utf-8',
+                dataEncoding: 'utf-8'
+            });
+
+            TCP_CLIENT.on('ready', function () {
+                TCP_CLIENT.close();
+                var keepaliveSeen = 0;
+                TCP_CLIENT.on('keepalive', function () {
+                    keepaliveSeen++;
+                });
+                setTimeout(function () {
+                    assert.equal(keepaliveSeen, 0,
+                        "Keepalive timer wasn't properly stopped!");
+                    done();
+                }, 1000);
+            });
+        });
+    });
 });
