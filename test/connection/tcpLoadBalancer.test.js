@@ -185,7 +185,7 @@ describe('TcpLoadBalancer', function () {
         });
         CONNECTION_POOL.on('connected', function () {
             assert.ok(isReady, 'ready event did not fire');
-            checkPool(CONNECTION_POOL._connections);
+            checkPool(CONNECTION_POOL);
             return done();
         });
     });
@@ -199,7 +199,7 @@ describe('TcpLoadBalancer', function () {
 
         CONNECTION_POOL.on('connected', function () {
             CONNECTION_POOL.on('connect', function () {
-                checkPool(CONNECTION_POOL._connections);
+                checkPool(CONNECTION_POOL);
                 done();
             });
             CONNECTION_POOL.getConnection()._transportStream.end();
@@ -219,7 +219,7 @@ describe('TcpLoadBalancer', function () {
                 reconnectCount++;
 
                 if (reconnectCount === POOL_SIZE) {
-                    checkPool(CONNECTION_POOL._connections);
+                    checkPool(CONNECTION_POOL);
                     done();
                 }
             });
@@ -273,7 +273,7 @@ describe('TcpLoadBalancer', function () {
                         assert.ok(_.findIndex(updatedHostKeys, k),
                                   'host ' + k + ' does not exist in host list');
                     });
-                    checkPool(CONNECTION_POOL._connections);
+                    checkPool(CONNECTION_POOL);
                     done();
                 }
             });
@@ -328,7 +328,7 @@ describe('TcpLoadBalancer', function () {
                     assert.ok(_.findIndex(updatedHostKeys, k),
                               'host ' + k + ' does not exist in host list');
                 });
-                checkPool(CONNECTION_POOL._connections);
+                checkPool(CONNECTION_POOL);
                 done();
             }, 100);
         });
@@ -336,27 +336,55 @@ describe('TcpLoadBalancer', function () {
 
     it('should gracefully handle pool size larger than actual available hosts',
         function (done) {
-            var poolSize = _.keys(SERVER_CFG).length + 5;
-            CONNECTION_POOL = reactiveSocket.createTcpLoadBalancer({
-                size: poolSize,
-                log: LOG,
-                hosts: SERVER_CFG
-            });
-            CONNECTION_POOL.on('connected', function () {
-                assert.fail(null, null, 'should not get connected event');
-            });
+        var poolSize = _.keys(SERVER_CFG).length + 5;
+        CONNECTION_POOL = reactiveSocket.createTcpLoadBalancer({
+            size: poolSize,
+            log: LOG,
+            hosts: SERVER_CFG
+        });
+        CONNECTION_POOL.on('connected', function () {
+            assert.fail(null, null, 'should not get connected event');
+        });
 
-            CONNECTION_POOL.on('ready', function () {
-                var connections = CONNECTION_POOL._connections;
-                var connected = _.keys(connections.connected).length;
-                var connecting = _.keys(connections.connecting).length;
-                var free = _.keys(connections.free).length;
-                assert.equal(SERVER_CFG.length, connected + connecting,
-                    'pool size should be size of servers');
-                assert.equal(0, free, 'free list should be empty');
-                done();
+        CONNECTION_POOL.on('ready', function () {
+            var connections = CONNECTION_POOL._connections;
+            var connected = _.keys(connections.connected).length;
+            var connecting = _.keys(connections.connecting).length;
+            var free = _.keys(connections.free).length;
+            assert.equal(SERVER_CFG.length, connected + connecting,
+                'pool size should be size of servers');
+            assert.equal(0, free, 'free list should be empty');
+            done();
+        });
+    });
+
+    it('#55 should maintain connections if remote connections close',
+        function (done) {
+        CONNECTION_POOL = reactiveSocket.createTcpLoadBalancer({
+            // size has to be host list so when all connections close, there
+            // are no free connections to connect to.
+            size: SERVER_CFG.length,
+            log: LOG,
+            hosts: SERVER_CFG
+        });
+        CONNECTION_POOL.on('connected', function () {
+            var count = 0;
+            // close all connections manually
+            _.forEach(CONNECTION_POOL._connections.connected, function (c) {
+                c.close();
+                c.on('close', function () {
+                    count++;
+                    // check that all these connections are still in the pool
+                    if (count === SERVER_CFG.length) {
+                        setTimeout(function () {
+                            checkPool(CONNECTION_POOL, SERVER_CFG.length);
+                            done();
+                        }, 100);
+                    }
+                });
             });
         });
+    });
 
     it('should resize pool to 0 and back', function (done) {
         CONNECTION_POOL = reactiveSocket.createTcpLoadBalancer({
@@ -382,26 +410,26 @@ describe('TcpLoadBalancer', function () {
             assert.equal(0, _.keys(connected).length, 'pool size should be 0');
             var free = connections.free;
             assert.equal(0, _.keys(free).length, 'free list should be empty');
-            checkPool(connections, 0);
+            checkPool(CONNECTION_POOL, 0);
             CONNECTION_POOL.removeListener('connected', onConnected);
             CONNECTION_POOL.removeListener('ready', onReady);
             // update with > POOL_SIZE hosts
             CONNECTION_POOL.updateHosts(SERVER_CFG);
             CONNECTION_POOL.on('connected', function () {
-                checkPool(connections);
+                checkPool(CONNECTION_POOL);
                 // update with < POOL_SIZE hosts
                 CONNECTION_POOL.updateHosts(_.sampleSize(SERVER_CFG,
                                                          POOL_SIZE - 1));
                 setTimeout(function () {
-                    checkPool(connections, POOL_SIZE - 1);
+                    checkPool(CONNECTION_POOL, POOL_SIZE - 1);
                     // update with 0 hosts
                     CONNECTION_POOL.updateHosts([]);
                     setTimeout(function () {
-                        checkPool(connections, 0);
+                        checkPool(CONNECTION_POOL, 0);
                         // update with > POOL_SIZE hosts
                         CONNECTION_POOL.updateHosts(SERVER_CFG);
                         setTimeout(function () {
-                            checkPool(connections);
+                            checkPool(CONNECTION_POOL);
                             done();
                         }, 100);
                     }, 100);
@@ -515,7 +543,10 @@ describe('TcpLoadBalancer', function () {
 /// Privates
 
 
-function checkPool(connections, poolSize) {
+function checkPool(pool, poolSize) {
+    var connections = pool._connections;
+    var hosts = pool._hosts;
+
     if (typeof (poolSize) !== 'number') {
         poolSize = POOL_SIZE;
     }
@@ -532,6 +563,8 @@ function checkPool(connections, poolSize) {
 
     assert.equal(poolSize, connected.length,
                  'should have the right amount of connected connections');
+    assert.equal(hosts.length, free.length + connected.length +
+                 connecting.length, 'hosts and connections count should match');
     assert.equal(connecting.length, 0,
                  'should not have conns in connecting state');
     assert.equal(connFreeIntersection.length, 0, 'should not have conns in' +
