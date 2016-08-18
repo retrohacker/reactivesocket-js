@@ -2,9 +2,9 @@
 
 var assert = require('chai').assert;
 
-var Recorder = require('../../lib/metrics/recorder.js');
-var NullCounter = require('../../lib/metrics/counter/null.js');
 var DefaultCounter = require('../../lib/metrics/counter/counter.js');
+var NullCounter = require('../../lib/metrics/counter/null.js');
+var Recorder = require('../../lib/metrics/recorder.js');
 
 describe('precise counter events', function () {
     it('create/update', function () {

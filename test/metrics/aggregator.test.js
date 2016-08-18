@@ -3,10 +3,10 @@
 var assert = require('chai').assert;
 var expect = require('chai').expect;
 
-var getSemaphore = require('../common/getSemaphore.js');
-var getRandomInt = require('../common/getRandomInt.js');
-var Recorder = require('../../lib/metrics/recorder.js');
 var Aggregator = require('../../lib/metrics/aggregator.js');
+var getRandomInt = require('../common/getRandomInt.js');
+var getSemaphore = require('../common/getSemaphore.js');
+var Recorder = require('../../lib/metrics/recorder.js');
 
 describe('Aggregator', function () {
     it('works', function (done) {

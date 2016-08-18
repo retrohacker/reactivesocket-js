@@ -4,10 +4,10 @@
 
 The library is composed of two central objects: the `Recorder` and the `Aggregator`.
 
-You use the `Recorder` to create `Counter`s and `Timer`s, then the `Counter`s and
-`Timer`s are used to send events to the `Recorder`.
+You use the `Recorder` to create `Counters` and `Timers`, then the `Counters` and
+`Timers` are used to send events to the `Recorder`.
 
-On the other end, the `Aggregator` listen to events emitted by the `Counter`s / `Timer`s
+On the other end, the `Aggregator` listen to events emitted by the `Counters` / `Timers`
 and aggregate them. The default `Aggregator` aggregates counter events as a single
 value (the latest) and timer event into an histogram.
 But nothing is preventing you for having different aggregating strategy, for

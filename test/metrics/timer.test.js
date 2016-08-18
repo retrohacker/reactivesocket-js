@@ -2,9 +2,9 @@
 
 var assert = require('chai').assert;
 
-var Recorder = require('../../lib/metrics/recorder.js');
-var NullTimer = require('../../lib/metrics/timer/null.js');
 var DefaultTimer = require('../../lib/metrics/timer/timer.js');
+var NullTimer = require('../../lib/metrics/timer/null.js');
+var Recorder = require('../../lib/metrics/recorder.js');
 
 describe('timer events', function () {
     it('start/stop generate event', function (done) {

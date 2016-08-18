@@ -3,15 +3,14 @@
 
 var _ = require('lodash');
 
-var getSemaphore = require('../test/common/getSemaphore.js');
-var getRandomInt = require('../test/common/getRandomInt.js');
-
-var Recorder = require('../lib/metrics/recorder.js');
 var Aggregator = require('../lib/metrics/aggregator.js');
 var BucketedHistogram = require('../lib/metrics/stats/bucketedhistogram.js');
-var StreamingHistogram = require('../lib/metrics/stats/streaminghistogram.js');
+var getRandomInt = require('../test/common/getRandomInt.js');
+var getSemaphore = require('../test/common/getSemaphore.js');
 var NullCounter = require('../lib/metrics/counter/null.js');
 var NullTimer = require('../lib/metrics/timer/null.js');
+var Recorder = require('../lib/metrics/recorder.js');
+var StreamingHistogram = require('../lib/metrics/stats/streaminghistogram.js');
 
 function measure(f, iterations) {
     var sum = 0;

@@ -3,12 +3,10 @@
 var assert = require('chai').assert;
 var expect = require('chai').expect;
 
+var BucketedHistogram = require('../../lib/metrics/stats/bucketedhistogram.js');
+var getRandomInt = require('../common/getRandomInt');
 var StreamingHistogram =
     require('../../lib/metrics/stats/streaminghistogram.js');
-var BucketedHistogram = require('../../lib/metrics/stats/bucketedhistogram.js');
-
-var getRandomInt = require('../common/getRandomInt');
-
 
 describe('StreamingHistogram', function () {
     it('empty histogram', function () {
