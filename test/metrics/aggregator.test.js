@@ -21,18 +21,18 @@ describe('Aggregator', function () {
             assert.equal(report.counters['connections/remove'], 2);
 
             expect(report.histograms.request_latency.min).to.be.within(0, 10);
-            expect(report.histograms.request_latency.max).to.be.within(45, 60);
-            expect(report.histograms.request_latency.p50).to.be.within(18, 32);
-            expect(report.histograms.request_latency.p90).to.be.within(35, 49);
-            expect(report.histograms.request_latency.p99).to.be.within(45, 60);
+            expect(report.histograms.request_latency.max).to.be.within(40, 70);
+            expect(report.histograms.request_latency.p50).to.be.within(15, 35);
+            expect(report.histograms.request_latency.p90).to.be.within(30, 55);
+            expect(report.histograms.request_latency.p99).to.be.within(45, 70);
 
             var connectLatency =
                 report.histograms['connections/connect_latency'];
-            expect(connectLatency.min).to.be.within(0, 5);
-            expect(connectLatency.max).to.be.within(45, 60);
-            expect(connectLatency.p50).to.be.within(18, 32);
-            expect(connectLatency.p90).to.be.within(35, 49);
-            expect(connectLatency.p99).to.be.within(45, 60);
+            expect(connectLatency.min).to.be.within(0, 10);
+            expect(connectLatency.max).to.be.within(40, 70);
+            expect(connectLatency.p50).to.be.within(15, 35);
+            expect(connectLatency.p90).to.be.within(30, 55);
+            expect(connectLatency.p99).to.be.within(45, 70);
 
             done();
         }
