@@ -75,10 +75,26 @@ prefixed by the scope value you provided during scoping.
 
 Scoping is encouraged for categorizing metrics into different namespaces.
 
+## Tags
+
+You can add tags to a specific counter / timer, the aggregator is free to do
+anything with the tags (the default one, just drop the tags).
+
+`aggregator.test.js` has a test that demonstrate how to use tags for creating
+histograms per request url, despite only measuring the latency once.
+
 ## Configuration
 
 The configuration is pretty flexible and you can control how you send event at
 both recording-time and aggregation-time.
+
+The config Object contains two entries `recorder` and `aggregator`.
+`recorder` contains two entries `counter` and `timer`, which are functions used
+for creating a new `Counter` / `Timer`. This function can be used to decide
+how to record metrics event (e.g. disable specific event recording).
+`aggregator` contains three entries `counter`, `timer` and `composites`. The
+first two are used for controlling how to aggregate events, they can create new
+histogram / counter at will based on the events it receives.
 
 In the following example, I disabled all timers execpt `request_latency_ms`, I
 also swaped out the default histogram for a more precise one with more quantiles,
@@ -98,12 +114,16 @@ var config = {
         }
     },
     aggregator: {
-        histogram: function (name) {
-            return new BucketedHistogram({
-                max: 60 * 1000,                    // 1 minute
-                error: 2 / 100,                    // 2% precision
-                quantiles: [0.5, 0.9, 0.99, 0.999] // default quantiles
-            });
+        timer: function (event, histograms, counters) {
+            if (!histograms[event.name]) {
+                histograms[event.name] = new BucketedHistogram({
+                    max: 60 * 1000,                    // 1 minute
+                    error: 2 / 100,                    // 2% precision
+                    quantiles: [0.5, 0.9, 0.99, 0.999] // default quantiles
+                });
+            }
+            var duration = event.stopTs - event.startTs;
+            histograms[event.name].add(duration);
         },
         composites: function (counters, histograms) {
             var current = counters['connections/add'] - counters['connections/remove'];

@@ -11,6 +11,8 @@ var NullCounter = require('../lib/metrics/counter/null.js');
 var NullTimer = require('../lib/metrics/timer/null.js');
 var Recorder = require('../lib/metrics/recorder.js');
 var StreamingHistogram = require('../lib/metrics/stats/streaminghistogram.js');
+var TagTimer = require('../lib/metrics/timer/tagtimer.js');
+var Timer = require('../lib/metrics/timer/timer.js');
 
 function measure(f, iterations, warmUp, tries) {
     var sum = 0;
@@ -72,17 +74,36 @@ function bench(iterations, warmUp, tries) {
         unit: 'µs'
     };
 
-    var recorder = new Recorder();
-    var aggregator = new Aggregator(recorder, {
-        histogram: function (name) {
-            if (name.startsWith('rs')) {
-                return new BucketedHistogram({
-                    error: 1 / 100,
-                    max: 1000,
-                    quantiles: [0.1, 0.5, 0.75, 0.9, 0.95, 0.99, 0.999, 0.9999]
-                });
+    var recorder = new Recorder({
+        timer: function (_recorder, name, tags) {
+            if (name === 'tag_timer') {
+                return new TagTimer(_recorder, name, tags);
             } else {
-                return new BucketedHistogram();
+                return new Timer(_recorder, name, tags);
+            }
+        }
+    });
+    var histogramFactory = function (name) {
+        if (name.startsWith('rs')) {
+            return new BucketedHistogram({
+                error: 1 / 100,
+                max: 1000,
+                quantiles: [0.1, 0.5, 0.75, 0.9, 0.95, 0.99, 0.999, 0.9999]
+            });
+        } else {
+            return new BucketedHistogram();
+        }
+    };
+    var aggregator = new Aggregator(recorder, {
+        timer: function (event, histograms, counters) {
+            if (!histograms[event.name]) {
+                histograms[event.name] = histogramFactory(event.name);
+            }
+
+            if (event.startTs) {
+                var duration = event.stopTs - event.startTs;
+                var histo = histograms[event.name];
+                histo.add(duration);
             }
         }
     });
@@ -99,8 +120,16 @@ function bench(iterations, warmUp, tries) {
 
     var recorder2 = new Recorder();
     var cheapAggregator = new Aggregator(recorder2, {
-        histogram: function (name) {
-            return new StreamingHistogram();
+        timer: function (event, histograms, counters) {
+            if (!histograms[event.name]) {
+                histograms[event.name] = new StreamingHistogram();
+            }
+
+            if (event.startTs) {
+                var duration = event.stopTs - event.startTs;
+                var histo = histograms[event.name];
+                histo.add(duration);
+            }
         }
     });
 
@@ -131,6 +160,16 @@ function bench(iterations, warmUp, tries) {
     result['start/stop timer (bucket)'] = time(function () {
         var id = timer.start();
         timer.stop(id);
+    }, baseline, iterations, warmUp, tries);
+
+    result['create tag timer (bucket)'] = time(function () {
+        recorder.timer('tag_timer');
+    }, baseline, iterations, warmUp, tries);
+
+    var ttimer = recorder.timer('tag_timer');
+    result['start/stop tag timer (bucket)'] = time(function () {
+        var id = ttimer.start();
+        ttimer.stop(id);
     }, baseline, iterations, warmUp, tries);
 
     result['create timer (streaming)'] = time(function () {

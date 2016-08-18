@@ -74,11 +74,12 @@ describe('timer events', function () {
 
     it('tags works', function () {
         var recorder = new Recorder();
-        var tags = {tag0: 'test'};
+        var tags = {tag0: 'test', tag1: 'toto'};
 
         recorder.on('timer', function (event) {
             assert(event.name === 'toto');
-            assert.deepEqual(event.tags, tags);
+            assert.equal(event.tag0, 'test');
+            assert.equal(event.tag1, 'toto');
         });
 
         var timer = recorder.timer('toto', tags);

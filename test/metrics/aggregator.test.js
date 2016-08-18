@@ -2,8 +2,11 @@
 
 var assert = require('chai').assert;
 var expect = require('chai').expect;
+var _ = require('lodash');
 
 var Aggregator = require('../../lib/metrics/aggregator.js');
+var BucketedHistogram = require('../../lib/metrics/stats/bucketedhistogram.js');
+var TagTimer = require('../../lib/metrics/timer/tagtimer.js');
 var getRandomInt = require('../common/getRandomInt.js');
 var getSemaphore = require('../common/getSemaphore.js');
 var Recorder = require('../../lib/metrics/recorder.js');
@@ -62,6 +65,47 @@ describe('Aggregator', function () {
                 semaphore.latch();
             }, getRandomInt(0, 50));
         }
+    });
+
+    it('tag timer works', function () {
+        var recorder = new Recorder({
+            timer: function (_recorder, name, tags) {
+                return new TagTimer(_recorder, name, tags);
+            }
+        });
+        var aggregator = new Aggregator(recorder, {
+            timer: function (event, histograms, counters) {
+                var duration = event.stopTs - event.startTs;
+
+                if (!histograms[event.name]) {
+                    histograms[event.name] = new BucketedHistogram();
+                }
+                histograms[event.name].add(duration);
+
+                if (event.url) {
+                    var name = event.url + '/' + event.name;
+
+                    if (!histograms[name]) {
+                        histograms[name] = new BucketedHistogram();
+                    }
+                    histograms[name].add(duration);
+                }
+            }
+        });
+        var timer = recorder.timer('request_latency_ms');
+
+        _.forEach(['home', 'edit', 'explore'], function (url) {
+            for (var i = 0; i < 100; i++) {
+                var id = timer.start();
+                timer.stop(id, {url: url});
+            }
+        });
+
+        var report = aggregator.report();
+        assert(report.histograms.request_latency_ms);
+        assert(report.histograms['home/request_latency_ms']);
+        assert(report.histograms['edit/request_latency_ms']);
+        assert(report.histograms['explore/request_latency_ms']);
     });
 
     it('create composite counters', function () {
