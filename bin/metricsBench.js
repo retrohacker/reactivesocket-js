@@ -46,7 +46,7 @@ function time(f, baseline, iterations, warmUp, tries) {
     return {
         min: min.toFixed(3),
         avg: avg.toFixed(3),
-        max: max.toFixed(3),
+        max: max.toFixed(3)
     };
 }
 
