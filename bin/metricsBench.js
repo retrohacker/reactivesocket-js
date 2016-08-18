@@ -12,12 +12,10 @@ var NullTimer = require('../lib/metrics/timer/null.js');
 var Recorder = require('../lib/metrics/recorder.js');
 var StreamingHistogram = require('../lib/metrics/stats/streaminghistogram.js');
 
-function measure(f, iterations) {
+function measure(f, iterations, warmUp, tries) {
     var sum = 0;
     var min = Number.MAX_VALUE;
     var max = Number.MIN_VALUE;
-    var warmUp = 3;
-    var tries = 10;
 
     for (var t = 0; t < warmUp + tries; t++) {
         var i = iterations;
@@ -40,23 +38,16 @@ function measure(f, iterations) {
     return [sum / tries, min, max];
 }
 
-function time(f, iterations, baseline, name) {
-    var results = measure(f, iterations);
+function time(f, baseline, iterations, warmUp, tries) {
+    var results = measure(f, iterations, warmUp, tries);
     var avg = Math.max(0, results[0] - baseline[0]);
     var min = Math.max(0, results[1] - baseline[1]);
     var max = Math.max(0, results[2] - baseline[2]);
-    var unit = 'µs';
-
-    if (avg > 1000) {
-        avg /= 1000;
-        min /= 1000;
-        max /= 1000;
-        unit = 'ms';
-    }
-    var prefix = '  ' + name;
-    var padding = ' '.repeat(40 - prefix.length);
-    console.log(prefix + padding + 'avg: ' + avg.toFixed(3) + unit +
-        '\tmin: ' + min.toFixed(3) + unit + '\tmax: ' + max.toFixed(3) + unit);
+    return {
+        min: min.toFixed(3),
+        avg: avg.toFixed(3),
+        max: max.toFixed(3),
+    };
 }
 
 function shuffle(array) {
@@ -70,12 +61,16 @@ function shuffle(array) {
     }
 }
 
-function bench(iterations) {
-    console.log('counter/timer');
-    console.log('*************');
-
+function bench(iterations, warmUp, tries) {
     var emptyFunction = function () { };
-    var baseline = measure(emptyFunction, iterations);
+    var baseline = measure(emptyFunction, iterations, warmUp, tries);
+
+    var result = {
+        iterations: iterations,
+        warmUp: warmUp,
+        tries: tries,
+        unit: 'µs'
+    };
 
     var recorder = new Recorder();
     var aggregator = new Aggregator(recorder, {
@@ -109,79 +104,74 @@ function bench(iterations) {
         }
     });
 
-    time(function () {
+    result['create counter'] = time(function () {
         recorder.counter('toto');
-    }, iterations, baseline, 'create counter');
+    }, baseline, iterations, warmUp, tries);
 
     var counter = recorder.counter('cccc');
-    time(function () {
+    result['increment counter'] = time(function () {
         counter.incr();
-    }, iterations, baseline, 'increment counter');
+    }, baseline, iterations, warmUp, tries);
 
-    time(function () {
+    result['create disabled counter'] = time(function () {
         disabledRecorder.counter('toto');
-    }, iterations, baseline, 'create disabled counter');
+    }, baseline, iterations, warmUp, tries);
 
     var counter2 = disabledRecorder.counter('cccc');
-    time(function () {
+    result['increment disabled counter'] = time(function () {
         counter2.incr();
-    }, iterations, baseline, 'increment disabled counter');
+    }, baseline, iterations, warmUp, tries);
 
 
-    time(function () {
+    result['create timer (bucket)'] = time(function () {
         recorder.timer('titi');
-    }, iterations, baseline, 'create timer (bucket)');
+    }, baseline, iterations, warmUp, tries);
 
     var timer = recorder.timer('tttt');
-    time(function () {
+    result['start/stop timer (bucket)'] = time(function () {
         var id = timer.start();
         timer.stop(id);
-    }, iterations, baseline, 'start/stop timer (bucket)');
+    }, baseline, iterations, warmUp, tries);
 
-    time(function () {
+    result['create timer (streaming)'] = time(function () {
         recorder2.timer('titi');
-    }, iterations, baseline, 'create timer (streaming)');
+    }, baseline, iterations, warmUp, tries);
 
     var stimer = recorder2.timer('ssss');
-    time(function () {
+    result['start/stop timer (streaming)'] = time(function () {
         var id = stimer.start();
         stimer.stop(id);
-    }, iterations, baseline, 'start/stop timer (streaming)');
+    }, baseline, iterations, warmUp, tries);
 
-    time(function () {
+    result['create disabled timer'] = time(function () {
         disabledRecorder.timer('titi');
-    }, iterations, baseline, 'create disabled timer');
+    }, baseline, iterations, warmUp, tries);
 
     var timer2 = disabledRecorder.timer('tttt');
-    time(function () {
+    result['start/stop disabled timer'] = time(function () {
         var id = timer2.start();
         timer2.stop(id);
-    }, iterations, baseline, 'start/stop disabled timer');
+    }, baseline, iterations, warmUp, tries);
 
-    console.log('');
-    console.log('Aggregator report');
-    console.log('*****************');
     iterations /= 200; // expensive work
 
     var n = 200; // number of metrics
     var m = 5000; // number of data points in the histograms
     var semaphore = getSemaphore(4 * m * n, function () {
-        console.log('done');
-
-        time(function () {
+        result['aggregator report (bucket histo)'] = time(function () {
             aggregator.report();
-        }, iterations, baseline, 'aggregator report (bucket histo)');
+        }, baseline, iterations, warmUp, tries);
 
-        time(function () {
+        result['aggregator report (streaming histo)'] = time(function () {
             cheapAggregator.report();
-        }, iterations, baseline, 'aggregator report (streaming histo)');
+        }, baseline, iterations, warmUp, tries);
 
-        time(function () {
+        result['disabled-aggregator report'] = time(function () {
             disabledAggregator.report();
-        }, iterations, baseline, 'disabled-aggregator report');
-    });
+        }, baseline, iterations, warmUp, tries);
 
-    process.stdout.write('creating fake data...');
+        console.log(JSON.stringify(result, null, 2));
+    });
 
     var rsTimer = recorder.scope('rs').timer('rs');
     var timersAndIds = [];
@@ -209,4 +199,4 @@ function bench(iterations) {
     });
 }
 
-bench(200 * 1000);
+bench(200 * 1000, 3, 10);
