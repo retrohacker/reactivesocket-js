@@ -21,18 +21,18 @@ describe('Aggregator', function () {
             assert.equal(report.counters['connections/remove'], 2);
 
             expect(report.histograms.request_latency.min).to.be.within(0, 10);
-            expect(report.histograms.request_latency.max).to.be.within(40, 70);
+            expect(report.histograms.request_latency.max).to.be.within(40, 100);
             expect(report.histograms.request_latency.p50).to.be.within(15, 35);
             expect(report.histograms.request_latency.p90).to.be.within(30, 55);
-            expect(report.histograms.request_latency.p99).to.be.within(45, 70);
+            expect(report.histograms.request_latency.p99).to.be.within(45, 100);
 
             var connectLatency =
                 report.histograms['connections/connect_latency'];
             expect(connectLatency.min).to.be.within(0, 10);
-            expect(connectLatency.max).to.be.within(40, 70);
+            expect(connectLatency.max).to.be.within(40, 100);
             expect(connectLatency.p50).to.be.within(15, 35);
             expect(connectLatency.p90).to.be.within(30, 55);
-            expect(connectLatency.p99).to.be.within(45, 70);
+            expect(connectLatency.p99).to.be.within(45, 100);
 
             done();
         }
@@ -42,7 +42,7 @@ describe('Aggregator', function () {
         connections.counter('add', 17);
         connections.counter('remove', 2);
 
-        var n = 1 << 10;
+        var n = 1 << 8;
         var semaphore = getSemaphore(n, finish);
         var requestLatency = recorder.timer('request_latency');
 
