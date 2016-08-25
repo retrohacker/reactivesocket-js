@@ -8,7 +8,7 @@ var url = require('url');
 var _  = require('lodash');
 var async = require('async');
 var dashdash = require('dashdash');
-var ss = require('simple-statistics');
+var metrix = require('metrix');
 var vasync = require('vasync');
 
 var Ws = require('ws');
@@ -80,19 +80,25 @@ var REQ = {
     data: DATA
 };
 
-var TIMERS = new Array(ITERATIONS);
-
 var COUNT = 0;
 
 var START_TIME;
-var HAS_PRINTED = false;
 
 var RS_CLIENT_CON;
 var CLIENT_STREAM;
 
+
+// var RECORDER = metrix.recorder.DISABLE;
+var RECORDER = metrix.createRecorder();
+var AGGREGATOR = metrix.createAggregator(RECORDER);
+
+var TCP_CONNECT_LATENCY = RECORDER.timer('tcp_connect_latency_ms');
+var TCP_CONNECT_LATENCY_ID = 0;
+
 vasync.pipeline({funcs: [
     function setupTransportStream(ctx, cb) {
         if (TCP_REGEX.test(RAW_URL)) {
+            TCP_CONNECT_LATENCY_ID = TCP_CONNECT_LATENCY.start();
             CLIENT_STREAM = net.connect(ENDPOINT.port, ENDPOINT.hostname,
                                         function (e) {
                 return cb(e);
@@ -112,11 +118,13 @@ vasync.pipeline({funcs: [
         }
     },
     function setupConnection(ctx, cb) {
+        TCP_CONNECT_LATENCY.stop(TCP_CONNECT_LATENCY_ID);
         RS_CLIENT_CON = reactiveSocket.createConnection({
             transport: {
                 stream: CLIENT_STREAM,
                 framed: true
             },
+            recorder: RECORDER,
             type: 'client',
             metadataEncoding: 'utf-8',
             dataEncoding: 'utf-8'
@@ -124,22 +132,19 @@ vasync.pipeline({funcs: [
 
         RS_CLIENT_CON.on('ready', function () {
             START_TIME = process.hrtime();
-            async.eachLimit(TIMERS, CONCURRENCY, function (timer, _cb) {
-                var start = process.hrtime();
-                var stream = RS_CLIENT_CON.request(REQ);
+            async.eachLimit(_.range(ITERATIONS), CONCURRENCY,
+                function (timer, _cb) {
+                    var stream = RS_CLIENT_CON.request(REQ);
 
-                stream.on('response', function (res) {
-                    var elapsed = process.hrtime(start);
-                    var elapsedNs = elapsed[0] * 1e9 + elapsed[1];
-                    TIMERS[COUNT] = elapsedNs;
-                    COUNT++;
-                    _cb();
+                    stream.on('response', function (res) {
+                        COUNT++;
+                        _cb();
 
-                    if (COUNT === ITERATIONS) {
-                        return cb();
-                    }
+                        if (COUNT === ITERATIONS) {
+                            return cb();
+                        }
+                    });
                 });
-            });
         });
     }
 ], arg: {}}, function (err, cb) {
@@ -151,53 +156,24 @@ vasync.pipeline({funcs: [
 });
 
 process.on('exit', function () {
-    printMetrics();
+    var report = AGGREGATOR.report();
+    console.log(JSON.stringify(report, null, 2));
+
+    var elapsed = process.hrtime(START_TIME);
+    var elapsedNs = elapsed[0] * 1e9 + elapsed[1];
+    var results = {
+        'elapsed time (s)': elapsedNs / 1e9,
+        'total reqs': COUNT,
+        RPS: COUNT / (elapsedNs / 1e9)
+    };
+    console.error(JSON.stringify(results, null, 2));
 });
 
 process.on('SIGINT', function () {
-    printMetrics();
     process.exit();
 });
 
-
 /// Private funcs
-
-
-function printMetrics() {
-    var timers = _.compact(TIMERS);
-    var elapsed = process.hrtime(START_TIME);
-    var elapsedNs = elapsed[0] * 1e9 + elapsed[1];
-
-    if (HAS_PRINTED) {
-        return;
-    }
-    HAS_PRINTED = true;
-    var results = {
-        'elapsed time (s)': elapsedNs / 1e9,
-        'total reqs': timers.length,
-        RPS: timers.length / (elapsedNs / 1e9),
-        'median (ms)': ss.median(timers) / 1e6,
-        'mean (ms)': ss.mean(timers) / 1e6,
-        '0.1% (ms)': ss.quantile(timers, 0.001) / 1e6,
-        '1% (ms)': ss.quantile(timers, 0.01) / 1e6,
-        '5% (ms)': ss.quantile(timers, 0.05) / 1e6,
-        '10% (ms)': ss.quantile(timers, 0.1) / 1e6,
-        '20% (ms)': ss.quantile(timers, 0.2) / 1e6,
-        '30% (ms)': ss.quantile(timers, 0.3) / 1e6,
-        '40% (ms)': ss.quantile(timers, 0.4) / 1e6,
-        '50% (ms)': ss.quantile(timers, 0.5) / 1e6,
-        '60% (ms)': ss.quantile(timers, 0.6) / 1e6,
-        '70% (ms)': ss.quantile(timers, 0.7) / 1e6,
-        '80% (ms)': ss.quantile(timers, 0.8) / 1e6,
-        '90% (ms)': ss.quantile(timers, 0.9) / 1e6,
-        '99% (ms)': ss.quantile(timers, 0.99) / 1e6,
-        '99.9% (ms)': ss.quantile(timers, 0.999) / 1e6,
-        '99.99% (ms)': ss.quantile(timers, 0.9999) / 1e6,
-        '99.999% (ms)': ss.quantile(timers, 0.99999) / 1e6
-    };
-
-    console.error(results);
-}
 
 function help(statusCode) {
     HELP = PARSER.help({includeEnv: true}).trimRight();
