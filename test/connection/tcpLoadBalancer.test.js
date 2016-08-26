@@ -6,6 +6,7 @@ var _ = require('lodash');
 var assert = require('chai').assert;
 
 var reactiveSocket = require('../../lib');
+var getSemaphore = require('../common/getSemaphore');
 
 var ERROR_CODES = reactiveSocket.ERROR_CODES;
 var LOG = require('../common/log');
@@ -141,14 +142,10 @@ describe('TcpLoadBalancer', function () {
     }
 
     beforeEach(function (done) {
-        var count = 0;
+        var semaphore = getSemaphore(_.keys(SERVER_CFG).length, done);
         _.concat(SERVER_CFG, EXTRA_SERVER_CFG).forEach(function (cfg) {
             createServer(cfg, function () {
-                count++;
-
-                if (count === _.keys(SERVER_CFG).length) {
-                    done();
-                }
+                semaphore.latch();
             });
         });
     });
@@ -156,14 +153,10 @@ describe('TcpLoadBalancer', function () {
     afterEach(function (done) {
         CONNECTION_POOL.close();
         SERVER_CONNECTION_COUNT = 0;
-        var count = 0;
+        var semaphore = getSemaphore(_.keys(SERVER_CFG).length, done);
         _(SERVERS).forEach(function (s) {
             s.close(function () {
-                count++;
-
-                if (count === _.keys(SERVER_CFG).length) {
-                    done();
-                }
+                semaphore.latch();
             });
         });
 
