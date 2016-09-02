@@ -66,7 +66,7 @@ describe('TcpConnection', function () {
 
     it('should reconnect when server closes connection', function (done) {
         TCP_SERVER.on('connection', function (server) {
-            var rs = reactiveSocket.createConnection({
+            var rs = reactiveSocket.createReactiveSocket({
                 log: LOG,
                 transport: {
                     stream: server,
@@ -113,7 +113,7 @@ describe('TcpConnection', function () {
 
     it('should reconnect when rs connection errors', function (done) {
         TCP_SERVER.on('connection', function (server) {
-            var rs = reactiveSocket.createConnection({
+            var rs = reactiveSocket.createReactiveSocket({
                 log: LOG,
                 transport: {
                     stream: server,
@@ -165,7 +165,7 @@ describe('TcpConnection', function () {
 
         TCP_SERVER.once('connection', function (server) {
 
-            var rs = reactiveSocket.createConnection({
+            var rs = reactiveSocket.createReactiveSocket({
                 log: LOG,
                 transport: {
                     stream: server,
@@ -203,7 +203,7 @@ describe('TcpConnection functional tests', function () {
     before(function (done) {
         TCP_SERVER = net.createServer(function (con) {
             TCP_SERVER_STREAM = con;
-            SERVER_CON = reactiveSocket.createConnection({
+            SERVER_CON = reactiveSocket.createReactiveSocket({
                 log: LOG,
                 transport: {
                     stream: con,

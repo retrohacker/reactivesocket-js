@@ -18,7 +18,7 @@ describe('Lease test', function () {
 
     beforeEach(function (done) {
         TCP_SERVER = net.createServer(function (con) {
-            reactiveSocket.createConnection({
+            reactiveSocket.createReactiveSocket({
                 log: LOG,
                 transport: {
                     stream: con,
@@ -49,7 +49,7 @@ describe('Lease test', function () {
                 throw e;
             }
 
-            TCP_CLIENT = reactiveSocket.createConnection({
+            TCP_CLIENT = reactiveSocket.createReactiveSocket({
                 log: LOG,
                 transport: {
                     stream: TCP_CLIENT_STREAM,
@@ -78,7 +78,7 @@ describe('Lease test', function () {
                 throw e;
             }
 
-            TCP_CLIENT = reactiveSocket.createConnection({
+            TCP_CLIENT = reactiveSocket.createReactiveSocket({
                 log: LOG,
                 transport: {
                     stream: TCP_CLIENT_STREAM,

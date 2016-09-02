@@ -35,7 +35,7 @@ describe('Timeout tests', function () {
     beforeEach(function (done) {
         var count = 0;
         TCP_SERVER = net.createServer(function (con) {
-            SERVER_CON = reactiveSocket.createConnection({
+            SERVER_CON = reactiveSocket.createReactiveSocket({
                 log: LOG,
                 transport: {
                     stream: con,
@@ -64,7 +64,7 @@ describe('Timeout tests', function () {
                 if (e) {
                     throw e;
                 }
-                CLIENT_CON = reactiveSocket.createConnection({
+                CLIENT_CON = reactiveSocket.createReactiveSocket({
                     log: LOG,
                     transport: {
                         stream: TCP_CLIENT_STREAM,

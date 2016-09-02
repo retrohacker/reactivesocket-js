@@ -109,7 +109,7 @@ describe('TcpLoadBalancer', function () {
             server.on('connection', function (s) {
                 SERVER_CONNECTIONS.push(s);
                 SERVER_CONNECTION_COUNT++;
-                reactiveSocket.createConnection({
+                reactiveSocket.createReactiveSocket({
                     log: LOG,
                     transport: {
                         stream: s,
