@@ -1,6 +1,5 @@
 'use strict';
 
-var _ = require('lodash');
 var assert = require('chai').assert;
 
 var getRandomInt = require('../common/getRandomInt');
@@ -44,8 +43,14 @@ describe('serialize/parse streams', function () {
             assert.equal(actualFrame.header.flags,
                          FLAGS.METADATA | seedFrame.flags);
             assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
-            assert.deepEqual(_.omit(actualFrame.setup, 'lease'),
-                _.omit(seedFrame, 'data', 'metadata', 'flags', 'type'));
+            assert.equal(actualFrame.setup.lease, true);
+            assert.equal(actualFrame.setup.keepalive, seedFrame.keepalive);
+            assert.equal(actualFrame.setup.maxLifetime, seedFrame.maxLifetime);
+            assert.equal(actualFrame.setup.version, seedFrame.version);
+            assert.equal(actualFrame.setup.metadataEncoding,
+                seedFrame.metadataEncoding);
+            assert.equal(actualFrame.setup.dataEncoding,
+                seedFrame.dataEncoding);
             assert.deepEqual(actualFrame.data, seedFrame.data);
             assert.deepEqual(actualFrame.metadata, seedFrame.metadata);
             done();

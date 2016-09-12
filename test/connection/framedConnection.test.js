@@ -209,21 +209,13 @@ describe('framed-connection-keepalive', function () {
     });
 
     afterEach(function (done) {
-        var count = 0;
+        var semaphore = getSemaphore(2, done);
         TCP_CLIENT_STREAM.once('close', function () {
-            count++;
-
-            if (count === 2) {
-                done();
-            }
+            semaphore.latch();
         });
         TCP_SERVER_STREAM.on('end', function () {
             TCP_SERVER.close(function () {
-                count++;
-
-                if (count === 2) {
-                    done();
-                }
+                semaphore.latch();
             });
         });
         TCP_SERVER_STREAM.end();
@@ -231,20 +223,12 @@ describe('framed-connection-keepalive', function () {
     });
 
     it('keepalive', function (done) {
-        var count = 0;
+        var semaphore = getSemaphore(2, done);
         SERVER_CON.on('keepalive', function () {
-            count++;
-
-            if (count === 2) {
-                done();
-            }
+            semaphore.latch();
         });
         CLIENT_CON.on('keepalive', function () {
-            count++;
-
-            if (count === 2) {
-                done();
-            }
+            semaphore.latch();
         });
     });
 });

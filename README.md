@@ -271,6 +271,38 @@ underlying connection.
 More details about the lease semantic are available in the
 [protocol Spec](https://github.com/ReactiveSocket/reactivesocket/blob/master/Protocol.md#connection-establishment).
 
+## Metrics
+
+ReactiveSocket uses the [metrix](https://github.com/stevegury/metrix) library to collect and export metrics.
+By default, the library doesn't collect any metrics, and then its usage doesn't
+have any impact on the performance of ReactiveSocket.
+
+To enable the collection, you need to pass a `Recorder` when creating a ReactiveSocket, and
+listen to this `Recorder` with an `Aggregator`.
+
+E.g.
+```javascript
+var RECORDER = metrix.createRecorder();
+var AGGREGATOR = metrix.createAggregator(RECORDER);
+
+var client = reactiveSocket.createConnection({
+    transport: {
+        stream: myStream,
+        framed: true
+    },
+    recorder: RECORDER,
+    type: 'client',
+    metadataEncoding: 'utf-8',
+    dataEncoding: 'utf-8'
+});
+
+setInterval(function () {
+    var report = AGGREGATOR.report();
+    var json = JSON.stringify(report);
+    console.log(json)
+}, 60*1000);
+```
+
 ## CLI
 This library comes with a CLI. You can use it by installing this module.
 ```bash

@@ -40,7 +40,7 @@
     "bunyan": "^1.5.1",
     "dashdash": "^1.13.1",
     "lodash": "^4.6.1",
-    "simple-statistics": "^2.0.0-beta1",
+    "metrix": "^0.0.2",
     "vasync": "^1.6.4",
     "ws": "^0.8.1",
     "yws-stream": "^1.0.0"

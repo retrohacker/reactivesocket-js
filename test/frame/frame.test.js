@@ -1,6 +1,5 @@
 'use strict';
 
-var _ = require('lodash');
 var assert = require('chai').assert;
 
 var frame = require('../../lib/protocol/frame');
@@ -11,32 +10,6 @@ var CONSTANTS = require('../../lib/protocol/constants');
 var FLAGS = CONSTANTS.FLAGS;
 var METADATA_ENCODING = 'utf8';
 var DATA_ENCODING = 'binary';
-
-describe('header', function () {
-    it('encode/decode', function () {
-        var seedFrame = {
-            length: 0, // 0 since we have no additional frame
-            type: CONSTANTS.TYPES.REQUEST_RESPONSE,
-            flags: CONSTANTS.FLAGS.NONE,
-            streamId: 4
-        };
-
-        var expectedParsedFrame = {
-            header: {
-                length: 12, // 12 becuase this is the length of the actual frame
-                flags: seedFrame.flags,
-                type: seedFrame.type,
-                streamId: seedFrame.streamId
-            }
-        };
-
-        var actualFrame = frame.parseFrame(frame.getFrameHeader(seedFrame));
-        assert.deepEqual(expectedParsedFrame, _.omit(actualFrame,
-                                                     'data',
-                                                     'dataEncoding',
-                                                     'metadataEncoding'));
-    });
-});
 
 describe('setup', function () {
     it('encode/decode with lease, strict, md and data', function () {
@@ -50,7 +23,8 @@ describe('setup', function () {
             metadata: 'We\'re just two lost souls swimming in a fish bowl',
             data: 'year after year'
         };
-        var actualFrame = frame.parseFrame(frame.getSetupFrame(seedFrame));
+        var setupFrame = frame.getSetupFrame(seedFrame);
+        var actualFrame = frame.parseFrame(setupFrame);
         assert.isObject(actualFrame.header);
         assert.equal(actualFrame.header.streamId, 0,
                      'setup frame id must be 0');
@@ -58,10 +32,15 @@ describe('setup', function () {
         assert.equal(actualFrame.header.flags,
                      FLAGS.METADATA | seedFrame.flags);
         assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
-        assert.deepEqual(_.omit(actualFrame.setup, 'lease'),
-            _.omit(seedFrame, 'data', 'metadata', 'flags'));
-        assert.deepEqual(actualFrame.data, seedFrame.data);
+        assert.equal(actualFrame.setup.lease, true);
+        assert.equal(actualFrame.setup.keepalive, seedFrame.keepalive);
+        assert.equal(actualFrame.setup.maxLifetime, seedFrame.maxLifetime);
+        assert.equal(actualFrame.setup.version, seedFrame.version);
+        assert.equal(actualFrame.setup.metadataEncoding,
+            seedFrame.metadataEncoding);
+        assert.equal(actualFrame.setup.dataEncoding, seedFrame.dataEncoding);
         assert.deepEqual(actualFrame.metadata, seedFrame.metadata);
+        assert.deepEqual(actualFrame.data, seedFrame.data);
     });
     it('encode/decode with lease, strict, and data', function () {
         var seedFrame = {
@@ -80,8 +59,13 @@ describe('setup', function () {
         assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
         assert.equal(actualFrame.header.flags, seedFrame.flags);
         assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
-        assert.deepEqual(_.omit(actualFrame.setup, 'lease'),
-            _.omit(seedFrame, 'data', 'metadata', 'flags'));
+        assert.equal(actualFrame.setup.lease, true);
+        assert.equal(actualFrame.setup.keepalive, seedFrame.keepalive);
+        assert.equal(actualFrame.setup.maxLifetime, seedFrame.maxLifetime);
+        assert.equal(actualFrame.setup.version, seedFrame.version);
+        assert.equal(actualFrame.setup.metadataEncoding,
+            seedFrame.metadataEncoding);
+        assert.equal(actualFrame.setup.dataEncoding, seedFrame.dataEncoding);
         assert.deepEqual(actualFrame.data, seedFrame.data);
     });
     it('encode/decode with lease, strict, md', function () {
@@ -102,8 +86,13 @@ describe('setup', function () {
         assert.equal(actualFrame.header.flags,
                      FLAGS.METADATA | seedFrame.flags);
         assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
-        assert.deepEqual(_.omit(actualFrame.setup, 'lease'),
-            _.omit(seedFrame, 'data', 'metadata', 'flags'));
+        assert.equal(actualFrame.setup.lease, true);
+        assert.equal(actualFrame.setup.keepalive, seedFrame.keepalive);
+        assert.equal(actualFrame.setup.maxLifetime, seedFrame.maxLifetime);
+        assert.equal(actualFrame.setup.version, seedFrame.version);
+        assert.equal(actualFrame.setup.metadataEncoding,
+            seedFrame.metadataEncoding);
+        assert.equal(actualFrame.setup.dataEncoding, seedFrame.dataEncoding);
         assert.deepEqual(actualFrame.metadata, seedFrame.metadata);
     });
     it('encode/decode with lease, strict', function () {
@@ -122,8 +111,13 @@ describe('setup', function () {
         assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
         assert.equal(actualFrame.header.flags, seedFrame.flags);
         assert.equal(actualFrame.header.type, CONSTANTS.TYPES.SETUP);
-        assert.deepEqual(_.omit(actualFrame.setup, 'lease'),
-            _.omit(seedFrame, 'flags'));
+        assert.equal(actualFrame.setup.lease, true);
+        assert.equal(actualFrame.setup.keepalive, seedFrame.keepalive);
+        assert.equal(actualFrame.setup.maxLifetime, seedFrame.maxLifetime);
+        assert.equal(actualFrame.setup.version, seedFrame.version);
+        assert.equal(actualFrame.setup.metadataEncoding,
+            seedFrame.metadataEncoding);
+        assert.equal(actualFrame.setup.dataEncoding, seedFrame.dataEncoding);
     });
 });
 
