@@ -7,7 +7,7 @@ var _ = require('lodash');
 var assert = require('chai').assert;
 
 var reactiveSocket = require('../../lib');
-var getSemaphore = require('../common/getSemaphore');
+var getSemaphore = require('../../lib/common/getSemaphore');
 
 var ERROR_CODES = reactiveSocket.ERROR_CODES;
 var LOG = require('../common/log');

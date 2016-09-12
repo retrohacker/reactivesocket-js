@@ -5,8 +5,7 @@ var assert = require('chai').assert;
 var bunyan = require('bunyan');
 
 var reactiveSocket = require('../../lib');
-var getSemaphore = require('../common/getSemaphore');
-
+var getSemaphore = require('../../lib/common/getSemaphore');
 
 var PORT = process.env.PORT || 1337;
 var HOST = process.env.HOST || 'localhost';
