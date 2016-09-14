@@ -12,6 +12,8 @@ var getSemaphore = require('../../lib/common/getSemaphore');
 var PORT = process.env.PORT || 2337;
 var HOST = process.env.HOST || 'localhost';
 
+var SERVERS = [];
+
 describe('LoadBalancer', function () {
 
     function createServer(cfg, semaphore) {
@@ -37,7 +39,7 @@ describe('LoadBalancer', function () {
                     //console.log('Server receiving request ' + stream);
                     setTimeout(function () {
                         stream.response({data: "wowow-" + cfg.port});
-                    }, 100 * (1 + Math.random()));
+                    }, 100 * (10 * Math.random()));
                 });
             });
 
@@ -47,6 +49,7 @@ describe('LoadBalancer', function () {
 
             semaphore.latch();
         });
+        SERVERS.push(server);
     }
 
 
@@ -56,6 +59,11 @@ describe('LoadBalancer', function () {
         createServer({port: 2338, host: HOST}, semaphore);
     });
 
+    afterEach(function () {
+        _.forEach(SERVERS, function (server) {
+            server.close()
+        });
+    })
 
     it('works', function (done) {
         this.timeout(21000);
@@ -85,7 +93,8 @@ describe('LoadBalancer', function () {
                 },
                 availability: function () {
                     return 1.0;
-                }
+                },
+                name: 'server-' + port
             }
         }
 
@@ -104,13 +113,13 @@ describe('LoadBalancer', function () {
         source.emit('add', factory0);
         source.emit('add', factory1);
 
-        var n = 200;
+        var n = 20;
         var timer = null;
         var cc = getSemaphore(n, function () {
             if (timer) {
                 clearInterval(timer);
             }
-            done();
+            lb.close(done);
         });
         var j = 0;
         lb.on('ready', function () {
@@ -123,7 +132,7 @@ describe('LoadBalancer', function () {
                     cc.latch();
                 });
                 j++;
-            }, 50);
+            }, 100);
         });
     })
 });
