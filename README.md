@@ -134,7 +134,7 @@ var reactiveSocket = require('reactivesocket');
 
 // Create any transport stream that's a Node.js Duplex Stream.
 var transportStream = net.connect(1337, 'localhost', function (err) {
-    var rsConnection = reactiveSocket.createConnection({
+    var rsConnection = reactiveSocket.createReactiveSocket({
         log: bunyan.createLogger({name: 'rsConnection'}),
         transport: {
             stream: transportStream,
@@ -182,7 +182,7 @@ var transportStream = new WSStream({
 // Wait for Websocket to establish connection, before we create an RS Connection
 websocket.on('open', function() {
 
-    var rsConnection = reactiveSocket.createConnection({
+    var rsConnection = reactiveSocket.createReactiveSocket({
         log: bunyan.createLogger({name: 'rsConnection'}),
         transport: {
             stream: transportStream
@@ -218,7 +218,7 @@ Below is an example of how to listen to those events.
 
 ```javascript
 var socket = ...;
-var client = reactiveSocket.createConnection({
+var client = reactiveSocket.createReactiveSocket({
     log: LOG,
     transport: {
         stream: socket,
@@ -248,7 +248,7 @@ ReactiveSocket client allows you to specify if you want to honor the lease
 semantic.
 
 ```javascript
-reactiveSocket.createConnection({
+reactiveSocket.createReactiveSocket({
     ...,
     lease: true,
     ...
@@ -285,7 +285,7 @@ E.g.
 var RECORDER = metrix.createRecorder();
 var AGGREGATOR = metrix.createAggregator(RECORDER);
 
-var client = reactiveSocket.createConnection({
+var client = reactiveSocket.createReactiveSocket({
     transport: {
         stream: myStream,
         framed: true

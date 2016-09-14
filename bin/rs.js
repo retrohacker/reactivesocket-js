@@ -108,7 +108,7 @@ vasync.pipeline({funcs: [
         }
     },
     function setupConnection(ctx, cb) {
-        RS_CLIENT_CON = reactiveSocket.createConnection({
+        RS_CLIENT_CON = reactiveSocket.createReactiveSocket({
             transport: {
                 stream: CLIENT_STREAM,
                 framed: true
