@@ -12,12 +12,15 @@ describe('BucketMedian', function () {
 
     function measureError() {
 
-        var med = new BucketMedian();
+        // var med = new BucketMedian(8);
+        var med = new BucketMedian(256 * 1024);
         var streaming = new Median();
         var buffer = [];
 
-        for (var i = 0; i < 100; i++) {
+        // for (var i = 0; i < 32; i++) {
+        for (var i = 0; i < 32 * 1024; i++) {
             var x = getRandomInt(10 * 1000, 100 * 1000);
+            // var x = getRandomInt(0,10);
             med.insert(x);
             streaming.insert(x);
             buffer.push(x);
@@ -28,7 +31,7 @@ describe('BucketMedian', function () {
         var estimatedMedian = med.estimate();
         var streamingEstimation = streaming.estimation();
 
-        // console.log('expected: ' + expectedMedian + ', estimated: ' + estimatedMedian + ', streaming: ' + streamingEstimation);
+        console.log('expected: ' + expectedMedian + ', estimated: ' + estimatedMedian + ', streaming: ' + streamingEstimation);
         var error0 = Math.abs(estimatedMedian - expectedMedian) / expectedMedian;
         var error1 = Math.abs(streamingEstimation - expectedMedian) / expectedMedian;
         return [error0, error1];
@@ -39,7 +42,8 @@ describe('BucketMedian', function () {
 
         var sum0 = 0;
         var sum1 = 0;
-        var n = 1000;
+        var n = 50;
+        // var n = 1;
         for(var i = 0; i < n; i++) {
             var errors = measureError();
             console.log(i + ': ' + errors[0].toFixed(3) + ',\t' + errors[1].toFixed(3));
