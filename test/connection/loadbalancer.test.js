@@ -14,7 +14,7 @@ var HOST = process.env.HOST || 'localhost';
 
 var SERVERS = [];
 
-describe('LoadBalancer', function () {
+describe.skip('LoadBalancer', function () {
 
     function createServer(cfg, semaphore) {
         console.log('Create server ' + JSON.stringify(cfg));
