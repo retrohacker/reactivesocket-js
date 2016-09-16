@@ -21,6 +21,7 @@ describe.skip('LoadBalancer', function () {
         var server = net.createServer();
         server.listen(cfg, function (err) {
             console.log('Server listening on ' + cfg.port);
+
             if (err) {
                 throw err;
             }
@@ -34,11 +35,11 @@ describe.skip('LoadBalancer', function () {
                     },
                     type: 'server'
                 }).on('error', function (e) {
-                    console.err("ERROR: " + e);
+                    console.err('ERROR: ' + e);
                 }).on('request', function (stream) {
                     //console.log('Server receiving request ' + stream);
                     setTimeout(function () {
-                        stream.response({data: "wowow-" + cfg.port});
+                        stream.response({data: 'wowow-' + cfg.port});
                     }, 100 * (10 * Math.random()));
                 });
             });
@@ -61,9 +62,9 @@ describe.skip('LoadBalancer', function () {
 
     afterEach(function () {
         _.forEach(SERVERS, function (server) {
-            server.close()
+            server.close();
         });
-    })
+    });
 
     it('works', function (done) {
         this.timeout(21000);
@@ -95,7 +96,7 @@ describe.skip('LoadBalancer', function () {
                     return 1.0;
                 },
                 name: 'server-' + port
-            }
+            };
         }
 
         var factory0 = makeFactory(HOST, 2337);
@@ -125,7 +126,8 @@ describe.skip('LoadBalancer', function () {
         lb.on('ready', function () {
             timer = setInterval(function () {
                 lb.request({data: 'req-req'}).on('response', function (res) {
-                    console.log('receive response ' + JSON.stringify(res.getResponse()));
+                    console.log('receive response ' +
+                        JSON.stringify(res.getResponse()));
                 }).on('error', function (err) {
                     assert(false, 'We shall not see errors!');
                 }).on('terminate', function () {
@@ -134,5 +136,5 @@ describe.skip('LoadBalancer', function () {
                 j++;
             }, 100);
         });
-    })
+    });
 });

@@ -40,8 +40,10 @@ describe('Sliding Median', function () {
         var estimatedMedian = slidingMedian.estimate();
         var streamingEstimation = frugalMedian.estimation();
 
-        var error0 = Math.abs(estimatedMedian - expectedMedian) / expectedMedian;
-        var error1 = Math.abs(streamingEstimation - expectedMedian) / expectedMedian;
+        var error0 = Math.abs(estimatedMedian - expectedMedian);
+        error0 /= expectedMedian;
+        var error1 = Math.abs(streamingEstimation - expectedMedian);
+        error1 /= expectedMedian;
         return [error0, error1];
     }
 
