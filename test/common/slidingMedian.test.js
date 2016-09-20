@@ -4,7 +4,7 @@ var assert = require('chai').assert;
 var expect = require('chai').expect;
 
 var getRandomInt = require('./getRandomInt');
-var SlidingMedian = require('../../lib/common/slidingMedian');
+var SlidingMedian = require('../../lib/common/slidingmedian');
 var FrugalMedian = require('../../lib/common/frugalMedian');
 
 describe('Sliding Median', function () {
@@ -38,7 +38,7 @@ describe('Sliding Median', function () {
         });
         var expectedMedian = buffer[Math.floor(buffer.length / 2)];
         var estimatedMedian = slidingMedian.estimate();
-        var streamingEstimation = frugalMedian.estimation();
+        var streamingEstimation = frugalMedian.estimate();
 
         var error0 = Math.abs(estimatedMedian - expectedMedian);
         error0 /= expectedMedian;

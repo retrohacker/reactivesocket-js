@@ -9,14 +9,46 @@ var EventEmitter = require('events');
 var reactiveSocket = require('../../lib');
 var getSemaphore = require('../../lib/common/getSemaphore');
 
-var PORT = process.env.PORT || 2337;
-var HOST = process.env.HOST || 'localhost';
-
 var SERVERS = [];
 
-describe.skip('LoadBalancer', function () {
+describe('LoadBalancer', function () {
+
+    function makeFactory(host, port) {
+        return {
+            apply: function () {
+                var res = new EventEmitter();
+                var client = net.connect(port, host, function (e) {
+                    if (e) {
+                        res.emit('error', e);
+                    } else {
+                        var rs = reactiveSocket.createReactiveSocket({
+                            transport: {
+                                stream: client,
+                                framed: true
+                            },
+                            type: 'client',
+                            metadataEncoding: 'utf-8',
+                            dataEncoding: 'utf-8'
+                        });
+                        res.emit('reactivesocket', rs);
+                    }
+                });
+                return res;
+            },
+            availability: function () {
+                return 1.0;
+            },
+            name: 'server-' + port
+        };
+    }
 
     function createServer(cfg, semaphore) {
+        var serverInfo = {
+            latencyMs: 0,
+            errorRate: 0,
+            requestCount: 0
+        };
+
         console.log('Create server ' + JSON.stringify(cfg));
         var server = net.createServer();
         server.listen(cfg, function (err) {
@@ -38,83 +70,88 @@ describe.skip('LoadBalancer', function () {
                     console.err('ERROR: ' + e);
                 }).on('request', function (stream) {
                     //console.log('Server receiving request ' + stream);
-                    setTimeout(function () {
-                        stream.response({data: 'wowow-' + cfg.port});
-                    }, 100 * (10 * Math.random()));
+                    serverInfo.requestCount++;
+                    if (Math.random() > serverInfo.errorRate) {
+                        console.log('server ' + cfg.port + ' responding with latency ' + serverInfo.latencyMs);
+                        if (serverInfo.latencyMs > 0) {
+                            setTimeout(function () {
+                                stream.response({data: 'wowow-' + cfg.port});
+                            }, serverInfo.latencyMs);
+                        } else {
+                            stream.response({data: 'wowow-' + cfg.port});
+                        }
+                    }
                 });
             });
 
             server.on('error', function (e) {
                 throw e;
             });
+            serverInfo.server = server;
 
             semaphore.latch();
         });
-        SERVERS.push(server);
+        serverInfo.factory = makeFactory('localhost', cfg.port);
+
+        SERVERS.push(serverInfo);
     }
 
-
     beforeEach(function (done) {
-        var semaphore = getSemaphore(2, done);
-        createServer({port: 2337, host: HOST}, semaphore);
-        createServer({port: 2338, host: HOST}, semaphore);
+        var base = 1337;
+        var n = 10;
+        var semaphore = getSemaphore(n, done);
+        for (var port = base; port < base + n; port++) {
+            createServer({port: port, host: 'localhost'}, semaphore);
+        }
     });
 
-    afterEach(function () {
-        _.forEach(SERVERS, function (server) {
-            server.close();
+    afterEach(function (done) {
+        var semaphore = getSemaphore(SERVERS.length, done);
+        _.forEach(SERVERS, function (info) {
+            console.log(JSON.stringify({
+                name: info.name,
+                requests: info.requestCount,
+                latency: info.latencyMs
+            }));
+            info.server.close(function () { semaphore.latch(); });
         });
     });
 
-    it('works', function (done) {
-        this.timeout(21000);
-        var source = new EventEmitter();
-
-        function makeFactory(host, port) {
-            return {
-                apply: function () {
-                    var res = new EventEmitter();
-                    var client = net.connect(port, host, function (e) {
-                        if (e) {
-                            res.emit('error', e);
-                        } else {
-                            var rs = reactiveSocket.createReactiveSocket({
-                                transport: {
-                                    stream: client,
-                                    framed: true
-                                },
-                                type: 'client',
-                                metadataEncoding: 'utf-8',
-                                dataEncoding: 'utf-8'
-                            });
-                            res.emit('reactivesocket', rs);
-                        }
-                    });
-                    return res;
-                },
-                availability: function () {
-                    return 1.0;
-                },
-                name: 'server-' + port
-            };
-        }
-
-        var factory0 = makeFactory(HOST, 2337);
-        var factory1 = makeFactory(HOST, 2338);
+    it('Empty loadbalancer generate errors', function (done) {
+        var emptySource = new EventEmitter();
 
         var lb = reactiveSocket.createLoadBalancer({
-            factorySource: source,
-            refreshPeriodMs: 500
+            factorySource: emptySource
         });
 
         lb.request({data: 'too soon'}).on('error', function (err) {
             assert(true, 'No factories have been added, LB must fail request!');
+            done();
+        });
+    });
+
+    it.only('works', function (done) {
+        this.timeout(60 * 1000);
+        var source = new EventEmitter();
+
+        var lb = reactiveSocket.createLoadBalancer({
+            factorySource: source,
+            refreshPeriodMs: 10 * 1000
         });
 
-        source.emit('add', factory0);
-        source.emit('add', factory1);
+        SERVERS[0].latencyMs = 1000;
+        source.emit('add', SERVERS[0].factory);
 
-        var n = 20;
+        setTimeout(function () {
+            source.emit('add', SERVERS[1].factory);
+            SERVERS[1].latencyMs = 2000;
+        }, 1000);
+
+        setTimeout(function () {
+            source.emit('add', SERVERS[2].factory);
+        }, 5000);
+
+        var n = 30;
         var timer = null;
         var cc = getSemaphore(n, function () {
             if (timer) {
@@ -134,7 +171,7 @@ describe.skip('LoadBalancer', function () {
                     cc.latch();
                 });
                 j++;
-            }, 100);
+            }, 500);
         });
     });
 });
