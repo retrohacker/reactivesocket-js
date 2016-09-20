@@ -88,6 +88,7 @@ describe('LoadBalancer', function () {
                 throw e;
             });
             serverInfo.server = server;
+            serverInfo.name = 'server-' + (cfg.port - 1337);
 
             semaphore.latch();
         });
@@ -105,15 +106,14 @@ describe('LoadBalancer', function () {
         }
     });
 
-    afterEach(function (done) {
-        var semaphore = getSemaphore(SERVERS.length, done);
+    afterEach(function () {
         _.forEach(SERVERS, function (info) {
             console.log(JSON.stringify({
                 name: info.name,
                 requests: info.requestCount,
                 latency: info.latencyMs
             }));
-            info.server.close(function () { semaphore.latch(); });
+            info.server.close();
         });
     });
 
@@ -141,17 +141,27 @@ describe('LoadBalancer', function () {
 
         SERVERS[0].latencyMs = 1000;
         source.emit('add', SERVERS[0].factory);
+        SERVERS[1].latencyMs = 1000;
+        source.emit('add', SERVERS[1].factory);
+        SERVERS[2].latencyMs = 1000;
+        source.emit('add', SERVERS[2].factory);
+        SERVERS[3].latencyMs = 1000;
+        source.emit('add', SERVERS[3].factory);
+        // SERVERS[4].latencyMs = 1000;
+        // source.emit('add', SERVERS[4].factory);
+        // SERVERS[5].latencyMs = 1000;
+        // source.emit('add', SERVERS[5].factory);
+
+        // setTimeout(function () {
+        //     source.emit('add', SERVERS[1].factory);
+        //     SERVERS[1].latencyMs = 1000;
+        // }, 200);
 
         setTimeout(function () {
-            source.emit('add', SERVERS[1].factory);
-            SERVERS[1].latencyMs = 2000;
-        }, 1000);
+            source.emit('add', SERVERS[6].factory);
+        }, 2000);
 
-        setTimeout(function () {
-            source.emit('add', SERVERS[2].factory);
-        }, 5000);
-
-        var n = 30;
+        var n = 100;
         var timer = null;
         var cc = getSemaphore(n, function () {
             if (timer) {
@@ -171,7 +181,7 @@ describe('LoadBalancer', function () {
                     cc.latch();
                 });
                 j++;
-            }, 500);
+            }, 50);
         });
     });
 });
