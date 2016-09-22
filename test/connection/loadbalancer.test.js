@@ -5,11 +5,15 @@ var net = require('net');
 var _ = require('lodash');
 var assert = require('chai').assert;
 var EventEmitter = require('events');
+var metrix = require('metrix');
 
 var reactiveSocket = require('../../lib');
 var getSemaphore = require('../../lib/common/getSemaphore');
 
 var SERVERS = [];
+
+var RECORDER = metrix.createRecorder();
+var AGGREGATOR = metrix.createAggregator(RECORDER);
 
 describe('LoadBalancer', function () {
 
@@ -27,6 +31,7 @@ describe('LoadBalancer', function () {
                                 framed: true
                             },
                             type: 'client',
+                            recorder: RECORDER,
                             metadataEncoding: 'utf-8',
                             dataEncoding: 'utf-8'
                         });
@@ -71,14 +76,14 @@ describe('LoadBalancer', function () {
                 }).on('request', function (stream) {
                     //console.log('Server receiving request ' + stream);
                     serverInfo.requestCount++;
+                    var req = stream.getRequest();
                     if (Math.random() > serverInfo.errorRate) {
-                        console.log('server ' + cfg.port + ' responding with latency ' + serverInfo.latencyMs);
                         if (serverInfo.latencyMs > 0) {
                             setTimeout(function () {
-                                stream.response({data: 'wowow-' + cfg.port});
+                                stream.response({data: 'resp-' + req.data + '-' + cfg.port});
                             }, serverInfo.latencyMs);
                         } else {
-                            stream.response({data: 'wowow-' + cfg.port});
+                            stream.response({data: 'resp-' + req.data + '-' + cfg.port});
                         }
                     }
                 });
@@ -97,6 +102,30 @@ describe('LoadBalancer', function () {
         SERVERS.push(serverInfo);
     }
 
+    function load(socket, numberOfRequests, rps, done) {
+        var n = numberOfRequests;
+        var timer = null;
+        var semaphore = getSemaphore(n, function () {
+            socket.close(done);
+        });
+
+        var j = 0;
+        timer = setInterval(function () {
+            if (j === numberOfRequests && timer) {
+                clearInterval(timer);
+            }
+            socket.request({data: 'req-' + j}).on('response', function (res) {
+                console.log('receive response ' +
+                    JSON.stringify(res.getResponse()));
+            }).on('error', function (err) {
+                console.log('error ' + err);
+            }).on('terminate', function () {
+                semaphore.latch();
+            });
+            j++;
+        }, 1000 / rps);
+    }
+
     beforeEach(function (done) {
         var base = 1337;
         var n = 10;
@@ -104,6 +133,7 @@ describe('LoadBalancer', function () {
         for (var port = base; port < base + n; port++) {
             createServer({port: port, host: 'localhost'}, semaphore);
         }
+        AGGREGATOR.clear();
     });
 
     afterEach(function () {
@@ -115,6 +145,11 @@ describe('LoadBalancer', function () {
             }));
             info.server.close();
         });
+        SERVERS = [];
+
+        var report = AGGREGATOR.report();
+        var json = JSON.stringify(report, null, 2);
+        console.log(json)
     });
 
     it('Empty loadbalancer generate errors', function (done) {
@@ -130,58 +165,113 @@ describe('LoadBalancer', function () {
         });
     });
 
-    it.only('works', function (done) {
-        this.timeout(60 * 1000);
+    it('increase aperture when necessary', function (done) {
+        this.timeout(10 * 1000);
+        var source = new EventEmitter();
+        var lb = reactiveSocket.createLoadBalancer({
+            factorySource: source,
+            refreshPeriodMs: 500,
+            initialAperture: 1, // low initial aperture, should converge to 3
+            recorder: RECORDER
+        });
+
+        // Setup 5 servers of identicall latency characteristics
+        SERVERS[0].latencyMs = 50;
+        source.emit('add', SERVERS[0].factory);
+        SERVERS[1].latencyMs = 50;
+        source.emit('add', SERVERS[1].factory);
+        SERVERS[2].latencyMs = 50;
+        source.emit('add', SERVERS[2].factory);
+        SERVERS[3].latencyMs = 50;
+        source.emit('add', SERVERS[3].factory);
+        SERVERS[4].latencyMs = 50;
+        source.emit('add', SERVERS[4].factory);
+
+        lb.on('ready', function () {
+            load(lb, 200, 90, function () {
+                var report = AGGREGATOR.report();
+                // 50ms latency is 1000/50 ~= 20 RPS per server
+                // 3 servers is enough handle between 3 * 20 * 1 = 60
+                // and 3 * 20 * 2 = 120 RPS
+                assert.equal(report.counters['loadbalancer/aperture'], 3);
+                done();
+            });
+        });
+    });
+
+    it('decrease aperture when necessary', function (done) {
+        this.timeout(10 * 1000);
         var source = new EventEmitter();
 
         var lb = reactiveSocket.createLoadBalancer({
             factorySource: source,
-            refreshPeriodMs: 10 * 1000
+            refreshPeriodMs: 500,
+            initialAperture: 6, // high initial aperture, should converge to 3
+            recorder: RECORDER
         });
 
-        SERVERS[0].latencyMs = 1000;
+        // Setup 5 servers of identicall latency characteristics
+        SERVERS[0].latencyMs = 50;
         source.emit('add', SERVERS[0].factory);
-        SERVERS[1].latencyMs = 1000;
+        SERVERS[1].latencyMs = 50;
         source.emit('add', SERVERS[1].factory);
-        SERVERS[2].latencyMs = 1000;
+        SERVERS[2].latencyMs = 50;
         source.emit('add', SERVERS[2].factory);
-        SERVERS[3].latencyMs = 1000;
+        SERVERS[3].latencyMs = 50;
         source.emit('add', SERVERS[3].factory);
-        // SERVERS[4].latencyMs = 1000;
-        // source.emit('add', SERVERS[4].factory);
-        // SERVERS[5].latencyMs = 1000;
-        // source.emit('add', SERVERS[5].factory);
+        SERVERS[4].latencyMs = 50;
+        source.emit('add', SERVERS[4].factory);
 
-        // setTimeout(function () {
-        //     source.emit('add', SERVERS[1].factory);
-        //     SERVERS[1].latencyMs = 1000;
-        // }, 200);
-
-        setTimeout(function () {
-            source.emit('add', SERVERS[6].factory);
-        }, 2000);
-
-        var n = 100;
-        var timer = null;
-        var cc = getSemaphore(n, function () {
-            if (timer) {
-                clearInterval(timer);
-            }
-            lb.close(done);
-        });
-        var j = 0;
         lb.on('ready', function () {
-            timer = setInterval(function () {
-                lb.request({data: 'req-req'}).on('response', function (res) {
-                    console.log('receive response ' +
-                        JSON.stringify(res.getResponse()));
-                }).on('error', function (err) {
-                    assert(false, 'We shall not see errors!');
-                }).on('terminate', function () {
-                    cc.latch();
-                });
-                j++;
-            }, 50);
+            load(lb, 200, 90, function () {
+                var report = AGGREGATOR.report();
+                // 50ms latency is 1000/50 ~= 20 RPS per server
+                // 3 servers is enough handle between 3 * 20 * 1 = 60
+                // and 3 * 20 * 2 = 120 RPS
+                assert.equal(report.counters['loadbalancer/aperture'], 3);
+                done();
+            });
+        });
+    });
+
+    it('favor fast server above slow ones', function (done) {
+        this.timeout(10 * 1000);
+        var source = new EventEmitter();
+
+        var lb = reactiveSocket.createLoadBalancer({
+            factorySource: source,
+            refreshPeriodMs: 1 * 1000,
+            recorder: RECORDER
+        });
+
+        SERVERS[0].latencyMs = 100;
+        source.emit('add', SERVERS[0].factory);
+        SERVERS[1].latencyMs = 100;
+        source.emit('add', SERVERS[1].factory);
+        SERVERS[2].latencyMs = 100;
+        source.emit('add', SERVERS[2].factory);
+        SERVERS[3].latencyMs = 100;
+        source.emit('add', SERVERS[3].factory);
+        SERVERS[4].latencyMs = 100;
+        source.emit('add', SERVERS[4].factory);
+        SERVERS[5].latencyMs = 100;
+        source.emit('add', SERVERS[5].factory);
+
+        // Fast one which should receive most of the requests
+        source.emit('add', SERVERS[6].factory);
+
+        lb.on('ready', function () {
+            load(lb, 100, 20, function () {
+                // Server 6 should have received most of the requests
+                assert(SERVERS[6].requestCount > 20 * SERVERS[0].requestCount);
+                assert(SERVERS[6].requestCount > 20 * SERVERS[1].requestCount);
+                assert(SERVERS[6].requestCount > 20 * SERVERS[2].requestCount);
+                assert(SERVERS[6].requestCount > 20 * SERVERS[3].requestCount);
+                assert(SERVERS[6].requestCount > 20 * SERVERS[4].requestCount);
+                assert(SERVERS[6].requestCount > 20 * SERVERS[5].requestCount);
+
+                done();
+            });
         });
     });
 });
