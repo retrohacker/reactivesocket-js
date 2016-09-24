@@ -18,25 +18,22 @@ var AGGREGATOR = metrix.createAggregator(RECORDER);
 describe('LoadBalancer', function () {
 
     function makeFactory(host, port) {
+        // TODO: add cancellation
         return {
             apply: function () {
                 var res = new EventEmitter();
-                var client = net.connect(port, host, function (e) {
-                    if (e) {
-                        res.emit('error', e);
-                    } else {
-                        var rs = reactiveSocket.createReactiveSocket({
-                            transport: {
-                                stream: client,
-                                framed: true
-                            },
-                            type: 'client',
-                            recorder: RECORDER,
-                            metadataEncoding: 'utf-8',
-                            dataEncoding: 'utf-8'
-                        });
-                        res.emit('reactivesocket', rs);
-                    }
+                var client = net.connect(port, host, function () {
+                    var rs = reactiveSocket.createReactiveSocket({
+                        transport: {
+                            stream: client,
+                            framed: true
+                        },
+                        type: 'client',
+                        recorder: RECORDER,
+                        metadataEncoding: 'utf-8',
+                        dataEncoding: 'utf-8'
+                    });
+                    res.emit('reactivesocket', rs);
                 });
                 return res;
             },
@@ -54,17 +51,17 @@ describe('LoadBalancer', function () {
             requestCount: 0
         };
 
-        console.log('Create server ' + JSON.stringify(cfg));
+        console.log(Date.now() + ' Create server ' + JSON.stringify(cfg));
         var server = net.createServer();
         server.listen(cfg, function (err) {
-            console.log('Server listening on ' + cfg.port);
+            console.log(Date.now() + ' Server listening on ' + cfg.port);
 
             if (err) {
                 throw err;
             }
 
             server.on('connection', function (s) {
-                // console.log('Server accepting connection ' + s);
+                // console.log(Date.now() + ' Server accepting connection ' + s);
                 reactiveSocket.createReactiveSocket({
                     transport: {
                         stream: s,
@@ -74,7 +71,7 @@ describe('LoadBalancer', function () {
                 }).on('error', function (e) {
                     console.err('ERROR: ' + e);
                 }).on('request', function (stream) {
-                    //console.log('Server receiving request ' + stream);
+                    //console.log(Date.now() + ' Server receiving request ' + stream);
                     serverInfo.requestCount++;
                     var req = stream.getRequest();
                     if (Math.random() > serverInfo.errorRate) {
@@ -113,12 +110,13 @@ describe('LoadBalancer', function () {
         timer = setInterval(function () {
             if (j === numberOfRequests && timer) {
                 clearInterval(timer);
+                return;
             }
             socket.request({data: 'req-' + j}).on('response', function (res) {
-                console.log('receive response ' +
+                console.log(Date.now() + ' receive response ' +
                     JSON.stringify(res.getResponse()));
             }).on('error', function (err) {
-                console.log('error ' + err);
+                console.log(Date.now() + ' error ' + JSON.stringify(err, null, 2));
             }).on('terminate', function () {
                 semaphore.latch();
             });
@@ -127,7 +125,7 @@ describe('LoadBalancer', function () {
     }
 
     beforeEach(function (done) {
-        var base = 1337;
+        var base = 2000;
         var n = 10;
         var semaphore = getSemaphore(n, done);
         for (var port = base; port < base + n; port++) {
@@ -137,12 +135,14 @@ describe('LoadBalancer', function () {
     });
 
     afterEach(function () {
+        console.log('*** Existing test, cleanup ***')
         _.forEach(SERVERS, function (info) {
             console.log(JSON.stringify({
                 name: info.name,
                 requests: info.requestCount,
                 latency: info.latencyMs
             }));
+            console.log('*** cleanup: closing server ' + info.server.name + ' ***')
             info.server.close();
         });
         SERVERS = [];
@@ -162,6 +162,32 @@ describe('LoadBalancer', function () {
         lb.request({data: 'too soon'}).on('error', function (err) {
             assert(true, 'No factories have been added, LB must fail request!');
             done();
+        });
+    });
+
+    it('deal with closing servers', function (done) {
+        this.timeout(10 * 1000);
+        var source = new EventEmitter();
+        var lb = reactiveSocket.createLoadBalancer({
+            factorySource: source,
+            refreshPeriodMs: 1000,
+            initialAperture: 5,
+            recorder: RECORDER
+        });
+
+        source.emit('add', SERVERS[0].factory);
+        source.emit('add', SERVERS[1].factory);
+        source.emit('add', SERVERS[2].factory);
+
+        lb.on('ready', function () {
+            load(lb, 10, 100, function () {
+                SERVERS[0].server.close();
+                SERVERS[0].server.close();
+
+                load(lb, 10, 100, function () {
+                    done();
+                });
+            });
         });
     });
 
@@ -229,6 +255,51 @@ describe('LoadBalancer', function () {
                 // 3 servers is enough handle between 3 * 20 * 1 = 60
                 // and 3 * 20 * 2 = 120 RPS
                 assert.equal(report.counters['loadbalancer/aperture'], 3);
+                done();
+            });
+        });
+    });
+
+    it.only('evict failing factories', function (done) {
+        this.timeout(10 * 1000);
+        var source = new EventEmitter();
+
+        var lb = reactiveSocket.createLoadBalancer({
+            factorySource: source,
+            refreshPeriodMs: 100,
+            recorder: RECORDER
+        });
+
+        var badFactory = {
+            apply: function () {
+                var emitter = new EventEmitter();
+                setTimeout(function () {
+                    emitter.emit('error', 'kaboom!');
+                }, 100);
+                return emitter;
+            },
+            availability: function () { return 1.0; },
+            name: 'bad factory'
+        };
+        source.emit('add', badFactory);
+        source.emit('add', badFactory);
+        source.emit('add', badFactory);
+
+        SERVERS[0].latencyMs = 100;
+        source.emit('add', SERVERS[0].factory);
+        SERVERS[1].latencyMs = 100;
+        source.emit('add', SERVERS[1].factory);
+        SERVERS[2].latencyMs = 100;
+        source.emit('add', SERVERS[2].factory);
+
+        lb.on('ready', function () {
+            load(lb, 10, 5, function () {
+                var report = AGGREGATOR.report();
+                assert.equal(
+                    report.counters['loadbalancer/connect_exception'], 3);
+                assert.equal(
+                    report.counters['connection/requests'],
+                    report.counters['connection/responses'])
                 done();
             });
         });
