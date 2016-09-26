@@ -35,6 +35,9 @@ describe('LoadBalancer', function () {
                     });
                     res.emit('reactivesocket', rs);
                 });
+                client.on('error', function (err) {
+                    res.emit('error', err);
+                })
                 return res;
             },
             availability: function () {
