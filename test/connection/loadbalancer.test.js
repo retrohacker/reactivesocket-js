@@ -117,8 +117,8 @@ describe('LoadBalancer', function () {
                 return;
             }
             socket.request({data: 'req-' + j}).on('response', function (res) {
-                // console.log(Date.now() + ' receive response ' +
-                //     JSON.stringify(res.getResponse()));
+                console.log(Date.now() + ' receive response ' +
+                    JSON.stringify(res.getResponse()));
             }).on('error', function (err) {
                 console.log(Date.now() + ' error ' + JSON.stringify(err, null, 2));
             }).on('terminate', function () {
