@@ -15,7 +15,7 @@ var SERVERS = [];
 var RECORDER = metrix.createRecorder();
 var AGGREGATOR = metrix.createAggregator(RECORDER);
 
-describe('LoadBalancer', function () {
+describe.only('LoadBalancer', function () {
 
     function makeFactory(host, port) {
         // TODO: add cancellation
@@ -51,7 +51,8 @@ describe('LoadBalancer', function () {
         var serverInfo = {
             latencyMs: 0,
             errorRate: 0,
-            requestCount: 0
+            requestCount: 0,
+            name: 'server-' + (cfg.port - 2000)
         };
 
         console.log(Date.now() + ' Create server ' + JSON.stringify(cfg));
@@ -77,6 +78,7 @@ describe('LoadBalancer', function () {
                     //console.log(Date.now() + ' Server receiving request ' + stream);
                     serverInfo.requestCount++;
                     var req = stream.getRequest();
+                    console.log(Date.now() + ' Server ' + serverInfo.name + ' responding with latency = ' + serverInfo.latencyMs);
                     if (Math.random() > serverInfo.errorRate) {
                         if (serverInfo.latencyMs > 0) {
                             setTimeout(function () {
@@ -93,7 +95,6 @@ describe('LoadBalancer', function () {
                 throw e;
             });
             serverInfo.server = server;
-            serverInfo.name = 'server-' + (cfg.port - 1337);
 
             semaphore.latch();
         });
@@ -145,7 +146,7 @@ describe('LoadBalancer', function () {
                 requests: info.requestCount,
                 latency: info.latencyMs
             }));
-            console.log('*** cleanup: closing server ' + info.server.name + ' ***')
+            console.log('*** cleanup: closing server ' + info.name + ' ***')
             info.server.close();
         });
         SERVERS = [];
@@ -199,7 +200,7 @@ describe('LoadBalancer', function () {
         var source = new EventEmitter();
         var lb = reactiveSocket.createLoadBalancer({
             factorySource: source,
-            refreshPeriodMs: 500,
+            refreshPeriodMs: 250,
             initialAperture: 1, // low initial aperture, should converge to 3
             recorder: RECORDER
         });
@@ -222,7 +223,10 @@ describe('LoadBalancer', function () {
                 // 50ms latency is 1000/50 ~= 20 RPS per server
                 // 3 servers is enough handle between 3 * 20 * 1 = 60
                 // and 3 * 20 * 2 = 120 RPS
-                assert.equal(report.counters['loadbalancer/aperture'], 3);
+                var aperture = report.counters['loadbalancer/aperture'];
+                // unpredictability and bad luck can make the aperture been
+                // bump to 4
+                assert(3 <= aperture && aperture <= 4);
                 done();
             });
         });
@@ -257,13 +261,16 @@ describe('LoadBalancer', function () {
                 // 50ms latency is 1000/50 ~= 20 RPS per server
                 // 3 servers is enough handle between 3 * 20 * 1 = 60
                 // and 3 * 20 * 2 = 120 RPS
-                assert.equal(report.counters['loadbalancer/aperture'], 3);
+                var aperture = report.counters['loadbalancer/aperture'];
+                // unpredictability and bad luck can make the aperture been
+                // bump to 4
+                assert(3 <= aperture && aperture <= 4);
                 done();
             });
         });
     });
 
-    it.only('evict failing factories', function (done) {
+    it('evict failing factories', function (done) {
         this.timeout(10 * 1000);
         var source = new EventEmitter();
 
@@ -308,13 +315,54 @@ describe('LoadBalancer', function () {
         });
     });
 
-    it('favor fast server above slow ones', function (done) {
-        this.timeout(10 * 1000);
+    it('decay prediction', function (done) {
+        this.timeout(30 * 1000);
         var source = new EventEmitter();
 
         var lb = reactiveSocket.createLoadBalancer({
             factorySource: source,
-            refreshPeriodMs: 1 * 1000,
+            inactivityPeriodMs: 100,
+            refreshPeriodMs: 500,
+            recorder: RECORDER
+        });
+
+        SERVERS[0].latencyMs = 250;
+        source.emit('add', SERVERS[0].factory);
+        SERVERS[1].latencyMs = 100;
+        source.emit('add', SERVERS[1].factory);
+        SERVERS[2].latencyMs = 100;
+        source.emit('add', SERVERS[2].factory);
+
+        // Start with a slow server-0, then later update its latency to 0
+        setTimeout(function () {
+            SERVERS[0].latencyMs = 0;
+        }, 1000);
+
+        lb.on('ready', function () {
+            load(lb, 200, 10, function () {
+                // at 10RPS with 100ms latency the average outstanding messages
+                // is ~1.0, which prevent server-0 to receive any messages
+                // (server-1 and server-2 will always been prefered)
+                // But as the prediction decay with an `inactivityPeriod` of
+                // 100ms, and in 5 inactivity decays (250*0.8^5 < 100) the
+                // server should receive again some traffic and should now
+                // be prefered.
+                assert(SERVERS[0].requestCount > 2 * SERVERS[1].requestCount);
+                assert(SERVERS[0].requestCount > 2 * SERVERS[2].requestCount);
+                done();
+            });
+        });
+
+    });
+
+    it('favor fast server above slow ones', function (done) {
+        this.timeout(30 * 1000);
+        var source = new EventEmitter();
+
+        var lb = reactiveSocket.createLoadBalancer({
+            factorySource: source,
+            inactivityPeriodMs: 5000,
+            refreshPeriodMs: 500,
             recorder: RECORDER
         });
 
@@ -332,17 +380,22 @@ describe('LoadBalancer', function () {
         source.emit('add', SERVERS[5].factory);
 
         // Fast one which should receive most of the requests
+        // but as we add it in the last position, it will not be part of the
+        // initial aperture, and it will takes time for the LB to discover it.
+        // The LB will start with an aperture of 3 servers and frequently close
+        // the slowest one and add randomly a new factory (this randomness is
+        // the reason why this test last for ~15 seconds)
         source.emit('add', SERVERS[6].factory);
 
         lb.on('ready', function () {
-            load(lb, 100, 20, function () {
+            load(lb, 300, 20, function () {
                 // Server 6 should have received most of the requests
-                assert(SERVERS[6].requestCount > 20 * SERVERS[0].requestCount);
-                assert(SERVERS[6].requestCount > 20 * SERVERS[1].requestCount);
-                assert(SERVERS[6].requestCount > 20 * SERVERS[2].requestCount);
-                assert(SERVERS[6].requestCount > 20 * SERVERS[3].requestCount);
-                assert(SERVERS[6].requestCount > 20 * SERVERS[4].requestCount);
-                assert(SERVERS[6].requestCount > 20 * SERVERS[5].requestCount);
+                assert(SERVERS[6].requestCount > 4 * SERVERS[0].requestCount);
+                assert(SERVERS[6].requestCount > 4 * SERVERS[1].requestCount);
+                assert(SERVERS[6].requestCount > 4 * SERVERS[2].requestCount);
+                assert(SERVERS[6].requestCount > 4 * SERVERS[3].requestCount);
+                assert(SERVERS[6].requestCount > 4 * SERVERS[4].requestCount);
+                assert(SERVERS[6].requestCount > 4 * SERVERS[5].requestCount);
 
                 done();
             });
