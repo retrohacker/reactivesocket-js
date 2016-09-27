@@ -15,7 +15,7 @@ var SERVERS = [];
 var RECORDER = metrix.createRecorder();
 var AGGREGATOR = metrix.createAggregator(RECORDER);
 
-describe.only('LoadBalancer', function () {
+describe('LoadBalancer', function () {
 
     function makeFactory(host, port) {
         // TODO: add cancellation
@@ -78,7 +78,7 @@ describe.only('LoadBalancer', function () {
                     //console.log(Date.now() + ' Server receiving request ' + stream);
                     serverInfo.requestCount++;
                     var req = stream.getRequest();
-                    console.log(Date.now() + ' Server ' + serverInfo.name + ' responding with latency = ' + serverInfo.latencyMs);
+                    // console.log(Date.now() + ' Server ' + serverInfo.name + ' responding with latency = ' + serverInfo.latencyMs);
                     if (Math.random() > serverInfo.errorRate) {
                         if (serverInfo.latencyMs > 0) {
                             setTimeout(function () {
@@ -117,8 +117,8 @@ describe.only('LoadBalancer', function () {
                 return;
             }
             socket.request({data: 'req-' + j}).on('response', function (res) {
-                console.log(Date.now() + ' receive response ' +
-                    JSON.stringify(res.getResponse()));
+                // console.log(Date.now() + ' receive response ' +
+                //     JSON.stringify(res.getResponse()));
             }).on('error', function (err) {
                 console.log(Date.now() + ' error ' + JSON.stringify(err, null, 2));
             }).on('terminate', function () {
@@ -388,7 +388,7 @@ describe.only('LoadBalancer', function () {
         source.emit('add', SERVERS[6].factory);
 
         lb.on('ready', function () {
-            load(lb, 300, 20, function () {
+            load(lb, 500, 20, function () {
                 // Server 6 should have received most of the requests
                 assert(SERVERS[6].requestCount > 4 * SERVERS[0].requestCount);
                 assert(SERVERS[6].requestCount > 4 * SERVERS[1].requestCount);
