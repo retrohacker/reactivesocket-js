@@ -146,7 +146,6 @@ describe('LoadBalancer', function () {
                 requests: info.requestCount,
                 latency: info.latencyMs
             }));
-            console.log('*** cleanup: closing server ' + info.name + ' ***')
             info.server.close();
         });
         SERVERS = [];
@@ -390,12 +389,12 @@ describe('LoadBalancer', function () {
         lb.on('ready', function () {
             load(lb, 500, 20, function () {
                 // Server 6 should have received most of the requests
-                assert(SERVERS[6].requestCount > 4 * SERVERS[0].requestCount);
-                assert(SERVERS[6].requestCount > 4 * SERVERS[1].requestCount);
-                assert(SERVERS[6].requestCount > 4 * SERVERS[2].requestCount);
-                assert(SERVERS[6].requestCount > 4 * SERVERS[3].requestCount);
-                assert(SERVERS[6].requestCount > 4 * SERVERS[4].requestCount);
-                assert(SERVERS[6].requestCount > 4 * SERVERS[5].requestCount);
+                assert(SERVERS[6].requestCount > 3 * SERVERS[0].requestCount);
+                assert(SERVERS[6].requestCount > 3 * SERVERS[1].requestCount);
+                assert(SERVERS[6].requestCount > 3 * SERVERS[2].requestCount);
+                assert(SERVERS[6].requestCount > 3 * SERVERS[3].requestCount);
+                assert(SERVERS[6].requestCount > 3 * SERVERS[4].requestCount);
+                assert(SERVERS[6].requestCount > 3 * SERVERS[5].requestCount);
 
                 done();
             });
