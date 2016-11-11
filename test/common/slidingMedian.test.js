@@ -1,6 +1,5 @@
 'use strict';
 
-var _ = require('lodash');
 var assert = require('chai').assert;
 var expect = require('chai').expect;
 
@@ -23,26 +22,14 @@ describe('Sliding Median', function () {
     });
 
     function testSlidingMedian(rps, windowMs, bufferSize, n, errorRange) {
-        var deltaT = 1000 / rps;
-        assert.isAtLeast(n * deltaT, windowMs,
-            'You need to provide enough data to fill at least the window');
+        assert.isAtLeast(n, bufferSize,
+            'You need to provide enough data to fill at least the buffer');
 
-        var time = 0;
-        var fakeClock = {
-            now: function () { return time; }
-        };
-
-        var slidingMedian = new SlidingMedian({
-            size: bufferSize,
-            clock: fakeClock,
-            windowMs: windowMs
-        });
-        time += 10;
+        var slidingMedian = new SlidingMedian(bufferSize);
 
         var i;
         for (i = 0; i < n; i++) {
             slidingMedian.insert(getRandomInt(0, 1000));
-            time += 1000 / rps;
         }
 
         var buf = new Array(bufferSize);
@@ -50,7 +37,6 @@ describe('Sliding Median', function () {
             var x = getRandomInt(100 * 1000, 1000 * 1000);
             slidingMedian.insert(x);
             buf[i % bufferSize] = x;
-            time += 1000 / rps;
         }
         buf.sort(function (a, b) { return a - b; });
         var expected = buf[(buf.length / 2) >> 0];
@@ -75,12 +61,7 @@ describe('Sliding Median', function () {
     });
 
     function compareError() {
-        var time = 0;
-        var slidingMedian = new SlidingMedian({
-            clock: {
-                now: function () { return time; }
-            }
-        });
+        var slidingMedian = new SlidingMedian();
         var frugalMedian = new FrugalMedian();
         var buffer = [];
 
@@ -89,7 +70,6 @@ describe('Sliding Median', function () {
             slidingMedian.insert(x);
             frugalMedian.insert(x);
             buffer.push(x);
-            time += 60000/128;
         }
 
         buffer.sort(function (a, b) {
