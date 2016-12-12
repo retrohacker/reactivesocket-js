@@ -43,7 +43,9 @@ describe('LoadBalancer', function () {
             availability: function () {
                 return 1.0;
             },
-            name: 'server-' + port
+            name: function () {
+                return 'server-' + port;
+            }
         };
     }
 
@@ -288,7 +290,7 @@ describe('LoadBalancer', function () {
                 return emitter;
             },
             availability: function () { return 1.0; },
-            name: 'bad factory'
+            name: function () { return 'bad factory'; }
         };
         source.emit('add', badFactory);
         source.emit('add', badFactory);
