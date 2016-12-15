@@ -356,8 +356,11 @@ describe('LoadBalancer', function () {
                 // 100ms, and in 5 inactivity decays (250*0.8^5 < 100) the
                 // server should receive again some traffic and should now
                 // be prefered.
-                assert(SERVERS[0].requestCount > 2 * SERVERS[1].requestCount);
-                assert(SERVERS[0].requestCount > 2 * SERVERS[2].requestCount);
+                var noiseFactor = 0.75;
+                assert(SERVERS[0].requestCount >
+                    2 * noiseFactor * SERVERS[1].requestCount);
+                assert(SERVERS[0].requestCount >
+                    2 * noiseFactor * SERVERS[2].requestCount);
                 done();
             });
         });
