@@ -21,7 +21,7 @@ describe('LoadBalancer', function () {
     function makeFactory(host, port) {
         // TODO: add cancellation
         return {
-            apply: function () {
+            build: function () {
                 var res = new EventEmitter();
                 var client = net.connect(port, host, function () {
                     var rs = reactiveSocket.createReactiveSocket({
@@ -286,7 +286,7 @@ describe('LoadBalancer', function () {
         });
 
         var badFactory = {
-            apply: function () {
+            build: function () {
                 var emitter = new EventEmitter();
                 setTimeout(function () {
                     emitter.emit('error', 'kaboom!');

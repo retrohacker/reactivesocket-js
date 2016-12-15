@@ -4,7 +4,7 @@ var assert = require('chai').assert;
 var expect = require('chai').expect;
 
 var getRandomInt = require('./getRandomInt');
-var SlidingMedian = require('../../lib/common/slidingmedian');
+var SlidingMedian = require('../../lib/common/slidingMedian');
 var FrugalMedian = require('../../lib/common/frugalMedian');
 
 describe('Sliding Median', function () {

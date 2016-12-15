@@ -2,7 +2,7 @@
 
 var startEchoServer = require('../common/startEchoServer');
 var ReactiveSocketFactory =
-    require('../../lib/connection/reactivesocketfactory');
+    require('../../lib/connection/reactiveSocketFactory');
 
 describe('ReactiveSocketFactory', function () {
     it('Create a factory from ip:port', function (done) {
@@ -15,7 +15,7 @@ describe('ReactiveSocketFactory', function () {
             host: 'localhost'
         });
 
-        factory.apply().on('reactivesocket', function (rs) {
+        factory.build().on('reactivesocket', function (rs) {
             rs.request({data: 'Hey'}).on('response', function (res) {
                 server.close();
                 done();
