@@ -119,7 +119,7 @@ vasync.pipeline({funcs: [
     },
     function setupConnection(ctx, cb) {
         TCP_CONNECT_LATENCY.stop(TCP_CONNECT_LATENCY_ID);
-        RS_CLIENT_CON = reactiveSocket.createConnection({
+        RS_CLIENT_CON = reactiveSocket.createReactiveSocket({
             transport: {
                 stream: CLIENT_STREAM,
                 framed: true
@@ -141,7 +141,7 @@ vasync.pipeline({funcs: [
                         _cb();
 
                         if (COUNT === ITERATIONS) {
-                            return cb();
+                            cb();
                         }
                     });
                 });

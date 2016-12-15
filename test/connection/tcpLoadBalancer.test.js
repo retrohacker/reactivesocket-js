@@ -96,7 +96,6 @@ describe('TcpLoadBalancer', function () {
     var SERVERS = {};
     var SERVER_CONNECTIONS = [];
     var CONNECTION_POOL;
-    var SERVER_CONNECTION_COUNT = 0;
 
     function createServer(cfg, cb) {
         var server = net.createServer();
@@ -108,8 +107,7 @@ describe('TcpLoadBalancer', function () {
 
             server.on('connection', function (s) {
                 SERVER_CONNECTIONS.push(s);
-                SERVER_CONNECTION_COUNT++;
-                reactiveSocket.createConnection({
+                reactiveSocket.createReactiveSocket({
                     log: LOG,
                     transport: {
                         stream: s,
@@ -155,7 +153,6 @@ describe('TcpLoadBalancer', function () {
 
     afterEach(function (done) {
         CONNECTION_POOL.close();
-        SERVER_CONNECTION_COUNT = 0;
         var count = 0;
         _(SERVERS).forEach(function (s) {
             s.close(function () {
@@ -504,35 +501,35 @@ describe('TcpLoadBalancer', function () {
     it('should get a connection, send req/res, bad connection after res',
        function (done) {
 
-           CONNECTION_POOL = reactiveSocket.createTcpLoadBalancer({
+        CONNECTION_POOL = reactiveSocket.createTcpLoadBalancer({
             size: POOL_SIZE,
             log: LOG,
             hosts: SERVER_CFG
         });
 
-           var connection;
+        var connection;
 
-           CONNECTION_POOL.on('connected', function () {
-               connection = CONNECTION_POOL.getConnection();
-               var response = connection.request(_.cloneDeep(EXPECTED_REQ));
-               response.on('response', function (res) {
-                   assert.deepEqual(res.getResponse(), EXPECTED_RES);
-                   connection._transportStream.end();
-                   setImmediate(done);
-               });
-               response.on('error', function (err) {
+        CONNECTION_POOL.on('connected', function () {
+            connection = CONNECTION_POOL.getConnection();
+            var response = connection.request(_.cloneDeep(EXPECTED_REQ));
+            response.on('response', function (res) {
+                assert.deepEqual(res.getResponse(), EXPECTED_RES);
+                connection._transportStream.end();
+                setImmediate(done);
+            });
+            response.on('error', function (err) {
                 throw new Error('should not get err');
             });
-           });
-       });
+        });
+    });
 
     it('should return a null connection when there are no connected hosts',
        function (done) {
         CONNECTION_POOL = reactiveSocket.createTcpLoadBalancer({
-           size: POOL_SIZE,
-           log: LOG,
-           hosts: [] // empty array so no hosts to connect to
-       });
+            size: POOL_SIZE,
+            log: LOG,
+            hosts: [] // empty array so no hosts to connect to
+        });
 
         assert.notOk(CONNECTION_POOL.getConnection());
         done();

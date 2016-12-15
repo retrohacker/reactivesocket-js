@@ -7,7 +7,7 @@ var _ = require('lodash');
 var assert = require('chai').assert;
 
 var reactiveSocket = require('../../lib');
-var getSemaphore = require('../common/getSemaphore');
+var getSemaphore = require('../../lib/common/getSemaphore');
 
 var ERROR_CODES = reactiveSocket.ERROR_CODES;
 var LOG = require('../common/log');
@@ -66,7 +66,7 @@ describe('frame-connection-setup', function () {
 
         TCP_SERVER.once('connection', function (server) {
 
-            var rs = reactiveSocket.createConnection({
+            var rs = reactiveSocket.createReactiveSocket({
                 log: LOG,
                 transport: {
                     stream: server,
@@ -85,7 +85,7 @@ describe('frame-connection-setup', function () {
 
             TCP_CLIENT_STREAMS.push(client);
 
-            var rc = reactiveSocket.createConnection({
+            var rc = reactiveSocket.createReactiveSocket({
                 log: LOG,
                 transport: {
                     stream: client,
@@ -110,7 +110,7 @@ describe('frame-connection-setup', function () {
 
         TCP_SERVER.once('connection', function (server) {
 
-            var rs = reactiveSocket.createConnection({
+            var rs = reactiveSocket.createReactiveSocket({
                 log: LOG,
                 transport: {
                     stream: server,
@@ -135,7 +135,7 @@ describe('frame-connection-setup', function () {
                 throw e;
             }
 
-            reactiveSocket.createConnection({
+            reactiveSocket.createReactiveSocket({
                 log: LOG,
                 transport: {
                     stream: client,
@@ -164,7 +164,7 @@ describe('framed-connection-keepalive', function () {
 
         TCP_SERVER = net.createServer(function (con) {
             TCP_SERVER_STREAM = con;
-            SERVER_CON = reactiveSocket.createConnection({
+            SERVER_CON = reactiveSocket.createReactiveSocket({
                 log: LOG,
                 transport: {
                     stream: con,
@@ -189,7 +189,7 @@ describe('framed-connection-keepalive', function () {
                 if (e) {
                     throw e;
                 }
-                CLIENT_CON = reactiveSocket.createConnection({
+                CLIENT_CON = reactiveSocket.createReactiveSocket({
                     log: LOG,
                     transport: {
                         stream: TCP_CLIENT_STREAM,
@@ -245,7 +245,7 @@ describe('framed-connection', function () {
         var count = 0;
         TCP_SERVER = net.createServer(function (con) {
             TCP_SERVER_STREAM = con;
-            SERVER_CON = reactiveSocket.createConnection({
+            SERVER_CON = reactiveSocket.createReactiveSocket({
                 log: LOG,
                 transport: {
                     stream: con,
@@ -274,7 +274,7 @@ describe('framed-connection', function () {
                 if (e) {
                     throw e;
                 }
-                CLIENT_CON = reactiveSocket.createConnection({
+                CLIENT_CON = reactiveSocket.createReactiveSocket({
                     log: LOG,
                     transport: {
                         stream: TCP_CLIENT_STREAM,
@@ -407,7 +407,7 @@ describe('framed-connection connection errors', function () {
     beforeEach(function (done) {
         var count = 0;
         TCP_SERVER = net.createServer(function (con) {
-            SERVER_CON = reactiveSocket.createConnection({
+            SERVER_CON = reactiveSocket.createReactiveSocket({
                 log: LOG,
                 transport: {
                     stream: con,
@@ -439,7 +439,7 @@ describe('framed-connection connection errors', function () {
                 if (e) {
                     throw e;
                 }
-                CLIENT_CON = reactiveSocket.createConnection({
+                CLIENT_CON = reactiveSocket.createReactiveSocket({
                     log: LOG,
                     transport: {
                         stream: TCP_CLIENT_STREAM,

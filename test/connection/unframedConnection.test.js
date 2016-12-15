@@ -7,8 +7,7 @@ var Ws = require('ws');
 var WSStream = require('yws-stream');
 
 var reactiveSocket = require('../../lib');
-var getSemaphore = require('../common/getSemaphore');
-
+var getSemaphore = require('../../lib/common/getSemaphore');
 var ERROR_CODES = reactiveSocket.ERROR_CODES;
 var LOG = require('../common/log');
 
@@ -56,7 +55,7 @@ describe('unframed-connection-setup', function () {
                 ws: socket
             });
 
-            var rs = reactiveSocket.createConnection({
+            var rs = reactiveSocket.createReactiveSocket({
                 log: LOG,
                 transport: {
                     stream: wsStream
@@ -75,7 +74,7 @@ describe('unframed-connection-setup', function () {
 
             WS_CLIENT_CONS.push(client);
 
-            var rc = reactiveSocket.createConnection({
+            var rc = reactiveSocket.createReactiveSocket({
                 log: LOG,
                 transport: {
                     stream: new WSStream({log:LOG, ws:client}),
@@ -105,7 +104,7 @@ describe('unframed-connection-setup', function () {
                 ws: socket
             });
 
-            var rs = reactiveSocket.createConnection({
+            var rs = reactiveSocket.createReactiveSocket({
                 log: LOG,
                 transport: {
                     stream: wsStream
@@ -126,7 +125,7 @@ describe('unframed-connection-setup', function () {
 
             WS_CLIENT_CONS.push(client);
 
-            reactiveSocket.createConnection({
+            reactiveSocket.createReactiveSocket({
                 log: LOG,
                 transport: {
                     stream: new WSStream({log:LOG, ws:client})
@@ -160,7 +159,7 @@ describe('connection', function () {
                     ws: socket
                 });
 
-                SERVER_CON = reactiveSocket.createConnection({
+                SERVER_CON = reactiveSocket.createReactiveSocket({
                     log: LOG,
                     transport: {
                         stream: WS_SERVER_STREAM
@@ -179,7 +178,7 @@ describe('connection', function () {
                     log: LOG,
                     ws: WS_CLIENT
                 });
-                CLIENT_CON = reactiveSocket.createConnection({
+                CLIENT_CON = reactiveSocket.createReactiveSocket({
                     log: LOG,
                     transport: {
                         stream: WS_CLIENT_STREAM

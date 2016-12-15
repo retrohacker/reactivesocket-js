@@ -17,7 +17,7 @@ WS_SERVER.on('listening', function () {
         socket.on('error', function (err) {
             console.error('ws con error', err);
         });
-        var RS_SERVER_CON = reactiveSocket.createConnection({
+        var RS_SERVER_CON = reactiveSocket.createReactiveSocket({
             transport: {
                 stream: new WSStream({
                     ws: socket
