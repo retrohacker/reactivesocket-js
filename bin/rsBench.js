@@ -141,7 +141,7 @@ vasync.pipeline({funcs: [
                         _cb();
 
                         if (COUNT === ITERATIONS) {
-                            return cb();
+                            cb();
                         }
                     });
                 });

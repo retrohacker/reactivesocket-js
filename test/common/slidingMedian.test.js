@@ -28,17 +28,21 @@ describe('Sliding Median', function () {
         var slidingMedian = new SlidingMedian(bufferSize);
 
         var i;
+
         for (i = 0; i < n; i++) {
             slidingMedian.insert(getRandomInt(0, 1000));
         }
 
         var buf = new Array(bufferSize);
+
         for (i = 0; i < n; i++) {
             var x = getRandomInt(100 * 1000, 1000 * 1000);
             slidingMedian.insert(x);
             buf[i % bufferSize] = x;
         }
-        buf.sort(function (a, b) { return a - b; });
+        buf.sort(function (a, b) {
+            return a - b;
+        });
         var expected = buf[(buf.length / 2) >> 0];
         var median = slidingMedian.estimate();
         var error = (100 * Math.abs(median - expected) / expected);
@@ -51,6 +55,7 @@ describe('Sliding Median', function () {
         this.timeout(30 * 1000);
 
         var avgError = 0;
+
         for (var i = 0; i < 100; i++) {
             avgError += testSlidingMedian(25, 500, 128, 200, 50);
         }

@@ -1,7 +1,8 @@
 'use strict';
 
 var startEchoServer = require('../common/startEchoServer');
-var ReactiveSocketFactory = require('../../lib/connection/reactivesocketfactory');
+var ReactiveSocketFactory =
+    require('../../lib/connection/reactivesocketfactory');
 
 describe('ReactiveSocketFactory', function () {
     it('Create a factory from ip:port', function (done) {

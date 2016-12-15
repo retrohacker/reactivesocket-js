@@ -6,6 +6,7 @@ var _ = require('lodash');
 var assert = require('chai').assert;
 var EventEmitter = require('events');
 var metrix = require('metrix');
+var LOG = require('../../lib/logger');
 
 var reactiveSocket = require('../../lib');
 var getSemaphore = require('../../lib/common/getSemaphore');
@@ -37,7 +38,7 @@ describe('LoadBalancer', function () {
                 });
                 client.on('error', function (err) {
                     res.emit('error', err);
-                })
+                });
                 return res;
             },
             availability: function () {
@@ -57,17 +58,16 @@ describe('LoadBalancer', function () {
             name: 'server-' + (cfg.port - 2000)
         };
 
-        console.log(Date.now() + ' Create server ' + JSON.stringify(cfg));
+        LOG.debug(Date.now() + ' Create server ' + JSON.stringify(cfg));
         var server = net.createServer();
         server.listen(cfg, function (err) {
-            console.log(Date.now() + ' Server listening on ' + cfg.port);
+            LOG.debug(Date.now() + ' Server listening on ' + cfg.port);
 
             if (err) {
                 throw err;
             }
 
             server.on('connection', function (s) {
-                // console.log(Date.now() + ' Server accepting connection ' + s);
                 reactiveSocket.createReactiveSocket({
                     transport: {
                         stream: s,
@@ -77,17 +77,19 @@ describe('LoadBalancer', function () {
                 }).on('error', function (e) {
                     console.err('ERROR: ' + e);
                 }).on('request', function (stream) {
-                    //console.log(Date.now() + ' Server receiving request ' + stream);
                     serverInfo.requestCount++;
                     var req = stream.getRequest();
-                    // console.log(Date.now() + ' Server ' + serverInfo.name + ' responding with latency = ' + serverInfo.latencyMs);
+                    var data = req.data;
+
                     if (Math.random() > serverInfo.errorRate) {
                         if (serverInfo.latencyMs > 0) {
                             setTimeout(function () {
-                                stream.response({data: 'resp-' + req.data + '-' + cfg.port});
+                                stream.response(
+                                    {data: 'resp-' + data + '-' + cfg.port});
                             }, serverInfo.latencyMs);
                         } else {
-                            stream.response({data: 'resp-' + req.data + '-' + cfg.port});
+                            stream.response(
+                                {data: 'resp-' + data + '-' + cfg.port});
                         }
                     }
                 });
@@ -119,10 +121,11 @@ describe('LoadBalancer', function () {
                 return;
             }
             socket.request({data: 'req-' + j}).on('response', function (res) {
-                console.log(Date.now() + ' receive response ' +
+                LOG.debug(Date.now() + ' receive response ' +
                     JSON.stringify(res.getResponse()));
             }).on('error', function (err) {
-                console.log(Date.now() + ' error ' + JSON.stringify(err, null, 2));
+                LOG.warn(Date.now() + ' error '
+                    + JSON.stringify(err, null, 2));
             }).on('terminate', function () {
                 semaphore.latch();
             });
@@ -134,6 +137,7 @@ describe('LoadBalancer', function () {
         var base = 2000;
         var n = 10;
         var semaphore = getSemaphore(n, done);
+
         for (var port = base; port < base + n; port++) {
             createServer({port: port, host: 'localhost'}, semaphore);
         }
@@ -141,9 +145,9 @@ describe('LoadBalancer', function () {
     });
 
     afterEach(function () {
-        console.log('*** Existing test, cleanup ***')
+        LOG.debug('*** Existing test, cleanup ***');
         _.forEach(SERVERS, function (info) {
-            console.log(JSON.stringify({
+            LOG.debug(JSON.stringify({
                 name: info.name,
                 requests: info.requestCount,
                 latency: info.latencyMs
@@ -154,7 +158,7 @@ describe('LoadBalancer', function () {
 
         var report = AGGREGATOR.report();
         var json = JSON.stringify(report, null, 2);
-        console.log(json)
+        LOG.debug(json);
     });
 
     it('Empty loadbalancer generate errors', function (done) {
@@ -224,7 +228,7 @@ describe('LoadBalancer', function () {
                 // 50ms latency is 1000/50 ~= 20 RPS per server
                 // 3 servers is enough handle between 3 * 20 * 1 = 60
                 // and 3 * 20 * 2 = 120 RPS
-                var aperture = report.counters['loadbalancer/aperture'];
+                var aperture = report.counters['loadbalancer/target_aperture'];
                 // unpredictability and bad luck can make the aperture been
                 // bump to 4
                 assert(3 <= aperture && aperture <= 4);
@@ -262,7 +266,7 @@ describe('LoadBalancer', function () {
                 // 50ms latency is 1000/50 ~= 20 RPS per server
                 // 3 servers is enough handle between 3 * 20 * 1 = 60
                 // and 3 * 20 * 2 = 120 RPS
-                var aperture = report.counters['loadbalancer/aperture'];
+                var aperture = report.counters['loadbalancer/target_aperture'];
                 // unpredictability and bad luck can make the aperture been
                 // bump to 4
                 assert(3 <= aperture && aperture <= 4);
@@ -289,8 +293,12 @@ describe('LoadBalancer', function () {
                 }, 100);
                 return emitter;
             },
-            availability: function () { return 1.0; },
-            name: function () { return 'bad factory'; }
+            availability: function () {
+                return 1.0;
+            },
+            name: function () {
+                return 'bad factory';
+            }
         };
         source.emit('add', badFactory);
         source.emit('add', badFactory);
@@ -310,7 +318,7 @@ describe('LoadBalancer', function () {
                     report.counters['loadbalancer/connect_exception'], 3);
                 assert.equal(
                     report.counters['connection/requests'],
-                    report.counters['connection/responses'])
+                    report.counters['connection/responses']);
                 done();
             });
         });
