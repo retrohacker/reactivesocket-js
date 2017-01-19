@@ -7,7 +7,13 @@ var getRandomInt = require('./getRandomInt');
 var SlidingMedian = require('../../lib/common/slidingMedian');
 var FrugalMedian = require('../../lib/common/frugalMedian');
 
-describe('Sliding Median', function () {
+describe.only('Sliding Median', function () {
+
+    it('Reject size which is not a power of 2', function () {
+        assert.throws(function () {
+            return new SlidingMedian(33);
+        }, Error, "Illegal argument, `size` should be a power of 2!");
+    });
 
     it('Empty Median returns 0', function () {
         var slidingMedian = new SlidingMedian();
@@ -21,7 +27,7 @@ describe('Sliding Median', function () {
         assert.equal(x, slidingMedian.estimate());
     });
 
-    function testSlidingMedian(rps, windowMs, bufferSize, n, errorRange) {
+    function testSlidingMedian(bufferSize, n, errorRange) {
         assert.isAtLeast(n, bufferSize,
             'You need to provide enough data to fill at least the buffer');
 
@@ -57,16 +63,16 @@ describe('Sliding Median', function () {
         var avgError = 0;
 
         for (var i = 0; i < 100; i++) {
-            avgError += testSlidingMedian(25, 500, 128, 200, 50);
+            avgError += testSlidingMedian(256, 512, 50);
         }
         avgError /= 100;
 
-        console.log('Average median estimation error ' + avgError + '%');
+        // console.log('Average median estimation error ' + avgError + '%');
         expect(avgError).to.be.within(0, 15);
     });
 
     function compareError() {
-        var slidingMedian = new SlidingMedian();
+        var slidingMedian = new SlidingMedian(64);
         var frugalMedian = new FrugalMedian();
         var buffer = [];
 
