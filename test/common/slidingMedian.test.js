@@ -7,7 +7,7 @@ var getRandomInt = require('./getRandomInt');
 var SlidingMedian = require('../../lib/common/slidingMedian');
 var FrugalMedian = require('../../lib/common/frugalMedian');
 
-describe.only('Sliding Median', function () {
+describe('Sliding Median', function () {
 
     it('Reject size which is not a power of 2', function () {
         assert.throws(function () {
