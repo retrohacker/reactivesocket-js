@@ -32,7 +32,8 @@ describe('LoadBalancer', function () {
                         type: 'client',
                         recorder: RECORDER,
                         metadataEncoding: 'utf-8',
-                        dataEncoding: 'utf-8'
+                        dataEncoding: 'utf-8',
+                        log: LOG
                     });
                     res.emit('reactivesocket', rs);
                 });
