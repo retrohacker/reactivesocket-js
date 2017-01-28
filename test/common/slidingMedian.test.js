@@ -12,7 +12,7 @@ describe('Sliding Median', function () {
     it('Reject size which is not a power of 2', function () {
         assert.throws(function () {
             return new SlidingMedian(33);
-        }, Error, "Illegal argument, `size` should be a power of 2!");
+        }, Error, 'Illegal argument, `size` should be a power of 2!');
     });
 
     it('Empty Median returns 0', function () {
