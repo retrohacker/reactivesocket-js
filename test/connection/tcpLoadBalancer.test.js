@@ -368,7 +368,6 @@ describe('TcpLoadBalancer', function () {
             var count = 0;
             // close all connections manually
             _.forEach(CONNECTION_POOL._connections.connected, function (c) {
-                c.close();
                 c.on('close', function () {
                     count++;
                     // check that all these connections are still in the pool
@@ -379,6 +378,8 @@ describe('TcpLoadBalancer', function () {
                         }, 100);
                     }
                 });
+
+                c.close();
             });
         });
     });
