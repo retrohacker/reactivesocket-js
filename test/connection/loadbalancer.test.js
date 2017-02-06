@@ -207,6 +207,7 @@ describe('LoadBalancer', function () {
         var lb = reactiveSocket.createLoadBalancer({
             factorySource: source,
             refreshPeriodMs: 250,
+            apertureRefreshPeriodMs: 100,
             initialAperture: 1, // low initial aperture, should converge to 3
             recorder: RECORDER
         });
@@ -245,6 +246,7 @@ describe('LoadBalancer', function () {
         var lb = reactiveSocket.createLoadBalancer({
             factorySource: source,
             refreshPeriodMs: 500,
+            apertureRefreshPeriodMs: 100,
             initialAperture: 6, // high initial aperture, should converge to 3
             recorder: RECORDER
         });
