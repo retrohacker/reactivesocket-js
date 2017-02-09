@@ -14,7 +14,7 @@ var RECORDER = metrix.createRecorder({
 });
 var AGGREGATOR = metrix.createAggregator(RECORDER);
 
-setInterval(function() {
+setInterval(function () {
     var report = AGGREGATOR.report();
     console.log(JSON.stringify(report, null, 2));
 }, 30000);
@@ -31,7 +31,7 @@ var lb = reactivesocket.createLoadBalancer({
     factorySource: factorySource,
     recorder: RECORDER,
     log: LOG
-})
+});
 
 _.forEach([1337, 1338, 1339, 1340, 1341], function (port) {
     var factory = reactivesocket.createReactiveSocketFactory({
@@ -50,7 +50,7 @@ function start (loadbalancer) {
         data: 'Hello!',
         metadata: 'XXX'
     }).on('response', function () {
-        setTimeout(function() {
+        setTimeout(function () {
             if (count > 0) {
                 count--;
                 start(loadbalancer);
