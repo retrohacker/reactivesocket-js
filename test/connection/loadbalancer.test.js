@@ -230,7 +230,7 @@ describe('LoadBalancer', function () {
                 // 50ms latency is 1000/50 ~= 20 RPS per server
                 // 3 servers is enough handle between 3 * 20 * 1 = 60
                 // and 3 * 20 * 2 = 120 RPS
-                var aperture = report.counters['loadbalancer/target_aperture'];
+                var aperture = report.counters['loadbalancer/targetAperture'];
                 // unpredictability and bad luck can make the aperture been
                 // bump to 4
                 assert(3 <= aperture && aperture <= 4);
@@ -269,7 +269,7 @@ describe('LoadBalancer', function () {
                 // 50ms latency is 1000/50 ~= 20 RPS per server
                 // 3 servers is enough handle between 3 * 20 * 1 = 60
                 // and 3 * 20 * 2 = 120 RPS
-                var aperture = report.counters['loadbalancer/target_aperture'];
+                var aperture = report.counters['loadbalancer/targetAperture'];
                 // unpredictability and bad luck can make the aperture been
                 // bump to 4
                 assert(3 <= aperture && aperture <= 4);
@@ -318,7 +318,7 @@ describe('LoadBalancer', function () {
             load(lb, 10, 5, function () {
                 var report = AGGREGATOR.report();
                 assert.equal(
-                    report.counters['loadbalancer/connect_exception'], 3);
+                    report.counters['loadbalancer/connectException'], 3);
                 assert.equal(
                     report.counters['connection/requests'],
                     report.counters['connection/responses']);
