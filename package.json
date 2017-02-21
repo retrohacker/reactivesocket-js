@@ -1,6 +1,6 @@
 {
   "name": "reactivesocket",
-  "version": "3.2.7",
+  "version": "3.2.8",
   "description": "reactive socket js core",
   "bin": {
     "rb": "bin/rsBench.js",
