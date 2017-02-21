@@ -36,23 +36,23 @@
   "homepage": "https://github.com/ReactiveSocket/reactivesocket-js#readme",
   "dependencies": {
     "assert-plus": "^1.0.0",
-    "async": "^2.1.4",
+    "async": "^2.1.5",
     "bunyan": "^1.8.5",
     "dashdash": "^1.14.1",
-    "lodash": "^4.17.2",
-    "metrix": "^1.0.1",
+    "lodash": "^4.17.4",
+    "metrix": "^1.1.0",
     "vasync": "^1.6.4",
     "ws": "^1.1.1",
     "yws-stream": "^1.0.0"
   },
   "devDependencies": {
     "chai": "^3.5.0",
-    "coveralls": "^2.11.15",
-    "eslint": "^3.11.1",
+    "coveralls": "^2.11.16",
+    "eslint": "^3.16.0",
     "istanbul": "^0.4.5",
     "jscs": "^3.0.7",
     "minimist": "^1.2.0",
     "mocha": "^3.2.0",
-    "sinon": "^1.17.6"
+    "sinon": "^1.17.7"
   }
 }
