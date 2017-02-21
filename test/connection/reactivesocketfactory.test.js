@@ -27,10 +27,10 @@ describe.only('ReactiveSocketFactory', function () {
                 server.close();
                 var report = aggregator.report();
 
-                assert(report.counters['connection/requests']);
-                assert(report.counters['connection/responses']);
-                assert(report.histograms['connection/requestLatency']);
-                assert(report.histograms['connection/setupLatency']);
+                assert(report.counters['rs/requests']);
+                assert(report.counters['rs/responses']);
+                assert(report.histograms['rs/requestLatency']);
+                assert(report.histograms['rs/setupLatency']);
                 done();
             });
         });
