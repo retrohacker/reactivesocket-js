@@ -7,7 +7,7 @@ var startEchoServer = require('../common/startEchoServer');
 var ReactiveSocketFactory =
     require('../../lib/connection/reactiveSocketFactory');
 
-describe.only('ReactiveSocketFactory', function () {
+describe('ReactiveSocketFactory', function () {
     it('Create a factory from ip:port', function (done) {
         this.timeout(30 * 1000);
 
