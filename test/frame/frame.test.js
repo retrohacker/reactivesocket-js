@@ -219,6 +219,27 @@ describe('request response', function cb() {
         assert.equal(actualFrame.data, seedFrame.data);
 
     });
+
+    it('encode/decode with utf8 chars', function () {
+        var seedFrame = {
+            metadataEncoding: 'utf8',
+            dataEncoding: 'utf8',
+            streamId: getRandomInt(0, Math.pow(2, 32)),
+            metadata: 'rüüückt',
+            data: 'veürrücküter'
+        };
+
+        var actualFrame = frame.parseFrame(
+            frame.getReqResFrame(seedFrame), 'utf8', 'utf8');
+        assert.isObject(actualFrame.header);
+        assert.equal(actualFrame.header.streamId, seedFrame.streamId);
+        assert.equal(actualFrame.header.type, CONSTANTS.TYPES.REQUEST_RESPONSE);
+        assert.equal(actualFrame.header.flags, CONSTANTS.FLAGS.METADATA);
+        assert.equal(actualFrame.metadata, seedFrame.metadata);
+        assert.equal(actualFrame.data, seedFrame.data);
+
+    });
+
 });
 
 describe('response', function () {
@@ -238,6 +259,27 @@ describe('response', function () {
         assert.equal(actualFrame.header.type, CONSTANTS.TYPES.RESPONSE);
         assert.equal(actualFrame.header.flags,
                      CONSTANTS.FLAGS.METADATA | CONSTANTS.FLAGS.COMPLETE);
+        assert.equal(actualFrame.metadata, seedFrame.metadata);
+        assert.equal(actualFrame.data, seedFrame.data);
+    });
+
+    it('encode/decode w/ utf8 data, utf8 metadata, and complete', function () {
+        var seedFrame = {
+            metadataEncoding: 'utf8',
+            dataEncoding: 'utf8',
+            streamId: getRandomInt(0, Math.pow(2, 32)),
+            flags: CONSTANTS.FLAGS.COMPLETE,
+            metadata: 'rüüückt',
+            data: 'veürrücküter'
+        };
+
+        var actualFrame = frame.parseFrame(
+            frame.getResponseFrame(seedFrame), 'utf8', 'utf8');
+        assert.isObject(actualFrame.header);
+        assert.equal(actualFrame.header.streamId, seedFrame.streamId);
+        assert.equal(actualFrame.header.type, CONSTANTS.TYPES.RESPONSE);
+        assert.equal(actualFrame.header.flags,
+            CONSTANTS.FLAGS.METADATA | CONSTANTS.FLAGS.COMPLETE);
         assert.equal(actualFrame.metadata, seedFrame.metadata);
         assert.equal(actualFrame.data, seedFrame.data);
     });
