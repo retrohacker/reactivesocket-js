@@ -108,11 +108,15 @@ describe('LoadBalancer', function () {
         SERVERS.push(serverInfo);
     }
 
-    function load(socket, numberOfRequests, rps, done) {
+    function load(socket, numberOfRequests, rps, done, noclose) {
         var n = numberOfRequests;
         var timer = null;
         var semaphore = getSemaphore(n, function () {
-            socket.close(done);
+            if (!noclose) {
+                socket.close(done);
+            } else {
+                done();
+            }
         });
 
         var j = 0;
@@ -198,6 +202,39 @@ describe('LoadBalancer', function () {
                     done();
                 });
             });
+        });
+    });
+
+    it('do not add back disabled server' , function (done) {
+        this.timeout(10 * 1000);
+        var source = new EventEmitter();
+        var lb = reactiveSocket.createLoadBalancer({
+            factorySource: source,
+            refreshPeriodMs: 100,
+            initialAperture: 5,
+            recorder: RECORDER
+        });
+
+        source.emit('add', SERVERS[0].factory);
+        source.emit('add', SERVERS[1].factory);
+
+        lb.on('ready', function () {
+            load(lb, 100, 100, function () {
+                source.emit('remove', SERVERS[1].factory);
+                var counter0 = SERVERS[0].requestCount;
+                var counter1 = SERVERS[1].requestCount;
+
+                load(lb, 100, 100, function () {
+                    var counter0b = SERVERS[0].requestCount;
+                    var counter1b = SERVERS[1].requestCount;
+
+                    assert(counter0 < counter0b,
+                        'Server 0 should have receive more messages');
+                    assert.equal(counter1, counter1b,
+                        'Server 1 should not have receive more messages');
+                    done();
+                });
+            }, true);
         });
     });
 
