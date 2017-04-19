@@ -442,12 +442,25 @@ describe('LoadBalancer', function () {
         lb.on('ready', function () {
             load(lb, 500, 20, function () {
                 // Server 6 should have received most of the requests
-                assert(SERVERS[6].requestCount > 3 * SERVERS[0].requestCount);
-                assert(SERVERS[6].requestCount > 3 * SERVERS[1].requestCount);
-                assert(SERVERS[6].requestCount > 3 * SERVERS[2].requestCount);
-                assert(SERVERS[6].requestCount > 3 * SERVERS[3].requestCount);
-                assert(SERVERS[6].requestCount > 3 * SERVERS[4].requestCount);
-                assert(SERVERS[6].requestCount > 3 * SERVERS[5].requestCount);
+                var x = 2; // tune this number low to avoid false positive
+                assert.isAbove(SERVERS[6].requestCount,
+                    x * SERVERS[0].requestCount,
+                    'Server 6 should receive more requests than server 0');
+                assert.isAbove(SERVERS[6].requestCount,
+                    x * SERVERS[1].requestCount,
+                    'Server 6 should receive more requests than server 1');
+                assert.isAbove(SERVERS[6].requestCount,
+                    x * SERVERS[2].requestCount,
+                    'Server 6 should receive more requests than server 2');
+                assert.isAbove(SERVERS[6].requestCount,
+                    x * SERVERS[3].requestCount,
+                    'Server 6 should receive more requests than server 3');
+                assert.isAbove(SERVERS[6].requestCount,
+                    x * SERVERS[4].requestCount,
+                    'Server 6 should receive more requests than server 4');
+                assert.isAbove(SERVERS[6].requestCount,
+                    x * SERVERS[5].requestCount,
+                    'Server 6 should receive more requests than server 5');
 
                 done();
             });

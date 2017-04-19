@@ -38,12 +38,14 @@ _.forEach([1337, 1338, 1339, 1340, 1341], function (port) {
         host: '127.0.0.1',
         port: port,
         keepalive: 1000,
-        log: LOG
+        log: LOG,
+        recorder: RECORDER
     });
     factorySource.emit('add', factory);
 });
 
-var count = 100;
+var count = 1000000;
+var RPS = 1000;
 
 function start (loadbalancer) {
     loadbalancer.request({
@@ -55,14 +57,14 @@ function start (loadbalancer) {
                 count--;
                 start(loadbalancer);
             }
-        }, 1000);
+        }, 1000 / RPS);
     }).on('error', function () {
         setTimeout(function () {
             if (count > 0) {
                 count--;
                 start(loadbalancer);
             }
-        }, 1000);
+        }, 1000 / RPS);
     });
 }
 
